@@ -14,7 +14,7 @@ app.include_router(api_router)
 @app.get("/", tags=["Root"])
 def root():
     return {
-        "message": "Welcome to AI LifeOS API 🚀",
+        "message": "Welcome to AI LifeOS API ",
         "version": "1.0.0",
         "status": "Running",
     }
