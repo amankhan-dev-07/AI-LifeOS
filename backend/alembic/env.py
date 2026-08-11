@@ -7,6 +7,9 @@ from sqlalchemy.engine import create_engine
 
 from app.config.settings import settings
 from app.db.base import Base
+# from app.db.base import Base
+from app.models.user import User
+from app.models.task import Task
 
 
 config = context.config

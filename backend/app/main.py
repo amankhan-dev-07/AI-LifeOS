@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-
+from app.models.task import Task
 from app.api.v1.router import api_router
 
 app = FastAPI(
