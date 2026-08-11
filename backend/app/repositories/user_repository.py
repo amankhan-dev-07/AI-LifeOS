@@ -45,3 +45,18 @@ def create_user(
     db.refresh(user)
 
     return user
+
+
+def update_user_full_name(
+    db: Session,
+    user: User,
+    full_name: str,
+) -> User:
+    """Update a user's full name."""
+
+    user.full_name = full_name
+
+    db.commit()
+    db.refresh(user)
+
+    return user
