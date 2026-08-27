@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.services.dashboard_service import get_dashboard
+
 from app.services.goal_service import (
     create_user_goal,
     delete_user_goal,
@@ -10,6 +12,7 @@ from app.services.goal_service import (
     get_user_goals,
     update_user_goal,
 )
+
 from app.services.task_service import (
     create_user_task,
     delete_user_task,
@@ -17,6 +20,21 @@ from app.services.task_service import (
     get_user_tasks,
     update_user_task,
 )
+
+from app.services.habit_service import (
+    create_user_habit,
+    delete_user_habit,
+    get_user_habit,
+    get_user_habits,
+    update_user_habit,
+)
+
+from app.services.habit_completion_service import (
+    complete_habit,
+    get_habit_completions,
+    remove_habit_completion,
+)
+from app.services.planner_service import get_daily_plan
 
 
 # =========================================================
@@ -479,3 +497,380 @@ def delete_goal_tool(
             "deleted": True,
         },
     }
+
+
+# =========================================================
+# HABIT TOOLS
+# =========================================================
+
+
+def create_habit_tool(
+    db: Session,
+    user_id: int,
+    title: str,
+    description: str | None = None,
+    frequency: str = "daily",
+) -> dict:
+    """Create a habit for the current user."""
+
+    habit = create_user_habit(
+        db=db,
+        user_id=user_id,
+        title=title,
+        description=description,
+        frequency=frequency,
+    )
+
+    return {
+        "success": True,
+        "habit": {
+            "id": habit.id,
+            "user_id": habit.user_id,
+            "title": habit.title,
+            "description": habit.description,
+            "frequency": habit.frequency,
+            "is_active": habit.is_active,
+            "current_streak": habit.current_streak,
+            "longest_streak": habit.longest_streak,
+            "last_completed_at": (
+                habit.last_completed_at.isoformat()
+                if habit.last_completed_at
+                else None
+            ),
+        },
+    }
+
+
+def get_habits_tool(
+    db: Session,
+    user_id: int,
+) -> dict:
+    """Read all habits belonging to the current user."""
+
+    habits = get_user_habits(
+        db=db,
+        user_id=user_id,
+    )
+
+    return {
+        "success": True,
+        "habits": [
+            {
+                "id": habit.id,
+                "title": habit.title,
+                "description": habit.description,
+                "frequency": habit.frequency,
+                "is_active": habit.is_active,
+                "current_streak": habit.current_streak,
+                "longest_streak": habit.longest_streak,
+                "last_completed_at": (
+                    habit.last_completed_at.isoformat()
+                    if habit.last_completed_at
+                    else None
+                ),
+            }
+            for habit in habits
+        ],
+    }
+
+
+def update_habit_tool(
+    db: Session,
+    user_id: int,
+    habit_id: int,
+    title: str | None = None,
+    description: str | None = None,
+    frequency: str | None = None,
+    is_active: bool | None = None,
+) -> dict:
+    """Update a habit belonging to the current user."""
+
+    habit = get_user_habit(
+        db=db,
+        habit_id=habit_id,
+        user_id=user_id,
+    )
+
+    if habit is None:
+        return {
+            "success": False,
+            "error": "Habit not found.",
+        }
+
+    updates = {
+        "title": title,
+        "description": description,
+        "frequency": frequency,
+        "is_active": is_active,
+    }
+
+    updates = {
+        key: value
+        for key, value in updates.items()
+        if value is not None
+    }
+
+    if not updates:
+        return {
+            "success": False,
+            "error": "No changes were provided.",
+        }
+
+    habit = update_user_habit(
+        db=db,
+        habit=habit,
+        **updates,
+    )
+
+    return {
+        "success": True,
+        "habit": {
+            "id": habit.id,
+            "user_id": habit.user_id,
+            "title": habit.title,
+            "description": habit.description,
+            "frequency": habit.frequency,
+            "is_active": habit.is_active,
+            "current_streak": habit.current_streak,
+            "longest_streak": habit.longest_streak,
+            "last_completed_at": (
+                habit.last_completed_at.isoformat()
+                if habit.last_completed_at
+                else None
+            ),
+        },
+    }
+
+
+def delete_habit_tool(
+    db: Session,
+    user_id: int,
+    habit_id: int,
+) -> dict:
+    """Delete a habit belonging to the current user."""
+
+    habit = get_user_habit(
+        db=db,
+        habit_id=habit_id,
+        user_id=user_id,
+    )
+
+    if habit is None:
+        return {
+            "success": False,
+            "error": "Habit not found.",
+        }
+
+    habit_id_value = habit.id
+    habit_title = habit.title
+
+    delete_user_habit(
+        db=db,
+        habit=habit,
+    )
+
+    return {
+        "success": True,
+        "habit": {
+            "id": habit_id_value,
+            "title": habit_title,
+            "deleted": True,
+        },
+    }
+
+
+def complete_habit_tool(
+    db: Session,
+    user_id: int,
+    habit_id: int,
+    completed_date: date | None = None,
+) -> dict:
+    """
+    Complete a habit for a specific date.
+
+    If no date is provided, today's date is used.
+    Existing streak logic is handled by habit_completion_service.
+    """
+
+    habit = get_user_habit(
+        db=db,
+        habit_id=habit_id,
+        user_id=user_id,
+    )
+
+    if habit is None:
+        return {
+            "success": False,
+            "error": "Habit not found.",
+        }
+
+    if not habit.is_active:
+        return {
+            "success": False,
+            "error": "Habit is inactive.",
+        }
+
+    if completed_date is None:
+        completed_date = date.today()
+
+    try:
+        completion = complete_habit(
+            db=db,
+            habit=habit,
+            completed_date=completed_date,
+        )
+
+    except HTTPException as exc:
+        return {
+            "success": False,
+            "error": exc.detail,
+            "status_code": exc.status_code,
+        }
+
+    return {
+        "success": True,
+        "habit": {
+            "id": habit.id,
+            "title": habit.title,
+            "frequency": habit.frequency,
+            "is_active": habit.is_active,
+            "current_streak": habit.current_streak,
+            "longest_streak": habit.longest_streak,
+            "last_completed_at": (
+                habit.last_completed_at.isoformat()
+                if habit.last_completed_at
+                else None
+            ),
+        },
+        "completion": {
+            "id": completion.id,
+            "habit_id": completion.habit_id,
+            "completed_date": (
+                completion.completed_date.isoformat()
+            ),
+            "created_at": (
+                completion.created_at.isoformat()
+            ),
+        },
+    }
+
+
+def get_habit_completions_tool(
+    db: Session,
+    user_id: int,
+    habit_id: int,
+) -> dict:
+    """Read completion history for a user's habit."""
+
+    habit = get_user_habit(
+        db=db,
+        habit_id=habit_id,
+        user_id=user_id,
+    )
+
+    if habit is None:
+        return {
+            "success": False,
+            "error": "Habit not found.",
+        }
+
+    completions = get_habit_completions(
+        db=db,
+        habit=habit,
+    )
+
+    return {
+        "success": True,
+        "habit": {
+            "id": habit.id,
+            "title": habit.title,
+            "current_streak": habit.current_streak,
+            "longest_streak": habit.longest_streak,
+            "last_completed_at": (
+                habit.last_completed_at.isoformat()
+                if habit.last_completed_at
+                else None
+            ),
+        },
+        "completions": [
+            {
+                "id": completion.id,
+                "habit_id": completion.habit_id,
+                "completed_date": (
+                    completion.completed_date.isoformat()
+                ),
+                "created_at": (
+                    completion.created_at.isoformat()
+                ),
+            }
+            for completion in completions
+        ],
+    }
+
+
+def remove_habit_completion_tool(
+    db: Session,
+    user_id: int,
+    habit_id: int,
+    completed_date: date,
+) -> dict:
+    """Remove a habit completion and recalculate streaks."""
+
+    habit = get_user_habit(
+        db=db,
+        habit_id=habit_id,
+        user_id=user_id,
+    )
+
+    if habit is None:
+        return {
+            "success": False,
+            "error": "Habit not found.",
+        }
+
+    try:
+        remove_habit_completion(
+            db=db,
+            habit=habit,
+            completed_date=completed_date,
+        )
+
+    except HTTPException as exc:
+        return {
+            "success": False,
+            "error": exc.detail,
+            "status_code": exc.status_code,
+        }
+
+    return {
+        "success": True,
+        "habit": {
+            "id": habit.id,
+            "title": habit.title,
+            "current_streak": habit.current_streak,
+            "longest_streak": habit.longest_streak,
+            "last_completed_at": (
+                habit.last_completed_at.isoformat()
+                if habit.last_completed_at
+                else None
+            ),
+        },
+        "removed_completion": {
+            "completed_date": completed_date.isoformat(),
+        },
+    }
+# =========================================================
+# DAILY PLANNER TOOL
+# =========================================================
+
+
+def get_daily_plan_tool(
+    db: Session,
+    user_id: int,
+) -> dict:
+    """Generate today's plan for the current user."""
+
+    return get_daily_plan(
+        db=db,
+        user_id=user_id,
+    )

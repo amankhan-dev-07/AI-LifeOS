@@ -1,23 +1,30 @@
 import json
 import urllib.error
 import urllib.request
+from datetime import date
 
 from sqlalchemy.orm import Session
 
 from app.ai.tools import (
     complete_goal_tool,
+    complete_habit_tool,
     complete_task_tool,
     create_goal_tool,
+    create_habit_tool,
     create_task_tool,
     delete_goal_tool,
+    delete_habit_tool,
     delete_task_tool,
+    get_daily_plan_tool,
     get_dashboard_tool,
     get_goals_tool,
+    get_habit_completions_tool,
+    get_habits_tool,
     get_tasks_tool,
     update_goal_tool,
+    update_habit_tool,
     update_task_tool,
 )
-
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "qwen2.5:1.5b"
@@ -39,6 +46,255 @@ def ask_brain(
         )
 
     text = message.lower().strip()
+
+    # =========================================================
+    # HABIT COMPLETE
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        habit_id = _extract_habit_id(text)
+
+        if (
+            habit_id is not None
+            and _is_habit_complete_request(text)
+        ):
+            result = complete_habit_tool(
+                db=db,
+                user_id=user_id,
+                habit_id=habit_id,
+            )
+
+            if not result["success"]:
+                return f"Habit complete nahi ho paya: {result['error']}"
+
+            habit = result["habit"]
+
+            return (
+                "Done bhai, habit complete kar di:\n"
+                f"• {habit['title']}\n"
+                f"• Current streak: {habit['current_streak']} days\n"
+                f"• Best streak: {habit['longest_streak']} days"
+            )
+
+    # =========================================================
+    # HABIT DELETE
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        habit_id = _extract_habit_id(text)
+
+        if (
+            habit_id is not None
+            and _is_habit_delete_request(text)
+        ):
+            result = delete_habit_tool(
+                db=db,
+                user_id=user_id,
+                habit_id=habit_id,
+            )
+
+            if not result["success"]:
+                return "Habit nahi mila bhai."
+
+            habit = result["habit"]
+
+            return (
+                "Done bhai, habit delete kar di:\n"
+                f"• {habit['title']}"
+            )
+
+    # =========================================================
+    # HABIT UPDATE
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        habit_id = _extract_habit_id(text)
+
+        if (
+            habit_id is not None
+            and _is_habit_update_request(text)
+        ):
+            frequency = _extract_habit_frequency(text)
+
+            if frequency is not None:
+                result = update_habit_tool(
+                    db=db,
+                    user_id=user_id,
+                    habit_id=habit_id,
+                    frequency=frequency,
+                )
+
+                if not result["success"]:
+                    return "Habit nahi mila bhai."
+
+                habit = result["habit"]
+
+                return (
+                    "Done bhai, habit update kar di:\n"
+                    f"• {habit['title']}\n"
+                    f"• Frequency: {habit['frequency']}"
+                )
+
+            if "inactive" in text or "deactivate" in text:
+                result = update_habit_tool(
+                    db=db,
+                    user_id=user_id,
+                    habit_id=habit_id,
+                    is_active=False,
+                )
+
+                if not result["success"]:
+                    return "Habit nahi mila bhai."
+
+                habit = result["habit"]
+
+                return (
+                    "Done bhai, habit deactivate kar di:\n"
+                    f"• {habit['title']}"
+                )
+
+            if "active" in text or "activate" in text:
+                result = update_habit_tool(
+                    db=db,
+                    user_id=user_id,
+                    habit_id=habit_id,
+                    is_active=True,
+                )
+
+                if not result["success"]:
+                    return "Habit nahi mila bhai."
+
+                habit = result["habit"]
+
+                return (
+                    "Done bhai, habit activate kar di:\n"
+                    f"• {habit['title']}"
+                )
+
+            return (
+                "Habit me kya update karna hai, "
+                "wo bata de bhai."
+            )
+
+    # =========================================================
+    # HABIT CREATE
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        if _is_habit_create_request(text):
+            title = _extract_habit_title(message)
+            frequency = _extract_habit_frequency(text)
+
+            if frequency is None:
+                frequency = "daily"
+
+            if title:
+                result = create_habit_tool(
+                    db=db,
+                    user_id=user_id,
+                    title=title,
+                    frequency=frequency,
+                )
+
+                if not result["success"]:
+                    return "Habit create nahi ho payi bhai."
+
+                habit = result["habit"]
+
+                return (
+                    "Done bhai, habit create kar di:\n"
+                    f"• {habit['title']}\n"
+                    f"• Frequency: {habit['frequency']}\n"
+                    f"• Current streak: {habit['current_streak']} days"
+                )
+
+            return (
+                "Habit ka naam bata de bhai, "
+                "phir main create kar deta hoon."
+            )
+
+    # =========================================================
+    # HABIT COMPLETIONS / HISTORY
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        habit_id = _extract_habit_id(text)
+
+        if (
+            habit_id is not None
+            and _is_habit_history_request(text)
+        ):
+            result = get_habit_completions_tool(
+                db=db,
+                user_id=user_id,
+                habit_id=habit_id,
+            )
+
+            if not result["success"]:
+                return "Habit nahi mila bhai."
+
+            habit = result["habit"]
+            completions = result["completions"]
+
+            if not completions:
+                return (
+                    f"{habit['title']} ki abhi koi "
+                    "completion history nahi hai."
+                )
+
+            lines = [
+                f"{habit['title']} ki completion history:"
+            ]
+
+            for completion in completions:
+                lines.append(
+                    f"• {completion['completed_date']}"
+                )
+
+            lines.append(
+                f"Current streak: {habit['current_streak']} days"
+            )
+            lines.append(
+                f"Best streak: {habit['longest_streak']} days"
+            )
+
+            return "\n".join(lines)
+
+    # =========================================================
+    # HABIT READ
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        if _is_habit_read_request(text):
+            result = get_habits_tool(
+                db=db,
+                user_id=user_id,
+            )
+
+            habits = result["habits"]
+
+            if not habits:
+                return "Abhi tumhari koi habits nahi hain."
+
+            lines = [
+                f"Tumhari total {len(habits)} habits hain:"
+            ]
+
+            for habit in habits:
+                active_status = (
+                    "active"
+                    if habit["is_active"]
+                    else "inactive"
+                )
+
+                lines.append(
+                    f"• {habit['title']} "
+                    f"({active_status}, "
+                    f"{habit['frequency']}, "
+                    f"streak {habit['current_streak']})"
+                )
+
+            return "\n".join(lines)
 
     # =========================================================
     # TASK COMPLETE
@@ -355,6 +611,85 @@ def ask_brain(
             return "\n".join(lines)
 
     # =========================================================
+    # DAILY PLANNER
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        if _is_daily_plan_request(text):
+
+            result = get_daily_plan_tool(
+                db=db,
+                user_id=user_id,
+            )
+
+            if not result["success"]:
+                return (
+                    "Bhai aaj ka plan banane me "
+                    "problem aa gayi."
+                )
+
+            summary = result["summary"]
+            plan = result["plan"]
+            goals = result["goals"]
+
+            lines = [
+                "📅 Aaj ka plan:",
+                "",
+            ]
+
+            if not plan:
+                lines.append(
+                    "Aaj ke liye koi pending task "
+                    "ya active habit nahi hai."
+                )
+            else:
+                for index, item in enumerate(
+                    plan,
+                    start=1,
+                ):
+                    if item["type"] == "task":
+                        lines.append(
+                            f"{index}. {item['title']} "
+                            f"({item['priority']} priority)"
+                        )
+
+                    elif item["type"] == "habit":
+                        lines.append(
+                            f"{index}. {item['title']} "
+                            f"(habit, "
+                            f"streak {item['current_streak']})"
+                        )
+
+            if goals:
+                lines.extend(
+                    [
+                        "",
+                        "🎯 Active goals:",
+                    ]
+                )
+
+                for goal in goals:
+                    lines.append(
+                        f"• {goal['title']} "
+                        f"({goal['category']})"
+                    )
+
+            lines.extend(
+                [
+                    "",
+                    "📊 Summary:",
+                    f"• Pending tasks: "
+                    f"{summary['pending_tasks']}",
+                    f"• Active goals: "
+                    f"{summary['active_goals']}",
+                    f"• Active habits: "
+                    f"{summary['active_habits']}",
+                ]
+            )
+
+            return "\n".join(lines)    
+
+    # =========================================================
     # VERIFIED DASHBOARD FACTS
     # =========================================================
 
@@ -532,6 +867,297 @@ def ask_brain(
 
 
 # =============================================================
+# HABIT INTENTS
+# =============================================================
+
+
+def _is_habit_complete_request(text: str) -> bool:
+    phrases = [
+        "habit complete",
+        "habit completed",
+        "habit pura",
+        "habit poora",
+        "habit done",
+        "habit finish",
+        "complete habit",
+        "complete kar",
+        "complete kr",
+        "pura kar",
+        "poora kar",
+        "done kar",
+        "check in",
+        "check-in",
+        "checkin",
+        "habit kar diya",
+        "habit kar de",
+    ]
+
+    return any(
+        phrase in text
+        for phrase in phrases
+    )
+
+
+def _is_habit_delete_request(text: str) -> bool:
+    delete_words = [
+        "delete",
+        "remove",
+        "hata",
+        "mita",
+    ]
+
+    return (
+        "habit" in text
+        and any(
+            word in text
+            for word in delete_words
+        )
+    )
+
+
+def _is_habit_update_request(text: str) -> bool:
+    phrases = [
+        "habit update",
+        "update habit",
+        "habit ki frequency",
+        "habit frequency",
+        "frequency change",
+        "frequency kar",
+        "frequency set",
+        "daily kar",
+        "weekly kar",
+        "monthly kar",
+        "habit active",
+        "habit inactive",
+        "activate habit",
+        "deactivate habit",
+        "modify habit",
+        "habit modify",
+    ]
+
+    return any(
+        phrase in text
+        for phrase in phrases
+    )
+
+
+def _is_habit_create_request(text: str) -> bool:
+    phrases = [
+        "habit bana",
+        "habit banao",
+        "habit bana de",
+        "habit create",
+        "habit create kar",
+        "habit add",
+        "habit add kar",
+        "habit daal",
+        "ek habit",
+    ]
+
+    return any(
+        phrase in text
+        for phrase in phrases
+    )
+
+
+def _is_habit_read_request(text: str) -> bool:
+    phrases = [
+        "mere habits",
+        "meri habits",
+        "mere habit",
+        "meri habit",
+        "habits bata",
+        "habit bata",
+        "habits dikha",
+        "habit dikha",
+        "habit list",
+        "habits list",
+    ]
+
+    return any(
+        phrase in text
+        for phrase in phrases
+    )
+
+
+def _is_habit_history_request(text: str) -> bool:
+    """Return True when the user asks for a habit's history."""
+
+    if "habit" not in text:
+        return False
+
+    history_words = [
+        "history",
+        "completions",
+        "completion",
+        "record",
+        "records",
+        "progress",
+    ]
+
+    return any(
+        word in text
+        for word in history_words
+    )
+
+
+def _extract_habit_id(text: str) -> int | None:
+    words = (
+        text
+        .replace("#", " ")
+        .replace(",", " ")
+        .split()
+    )
+
+    for index, word in enumerate(words):
+
+        if word != "habit":
+            continue
+
+        if (
+            index + 2 < len(words)
+            and words[index + 1] == "id"
+        ):
+            try:
+                return int(words[index + 2])
+            except ValueError:
+                pass
+
+        if index + 1 < len(words):
+            try:
+                return int(words[index + 1])
+            except ValueError:
+                pass
+
+    return None
+
+
+def _extract_habit_frequency(
+    text: str,
+) -> str | None:
+
+    frequencies = [
+        "daily",
+        "weekly",
+        "monthly",
+    ]
+
+    for frequency in frequencies:
+        if frequency in text:
+            return frequency
+
+    if "roz" in text:
+        return "daily"
+
+    if "har din" in text:
+        return "daily"
+
+    if "hafte" in text or "hafta" in text:
+        return "weekly"
+
+    if "mahine" in text or "mahina" in text:
+        return "monthly"
+
+    return None
+
+def _is_daily_plan_request(text: str) -> bool:
+    phrases = [
+        "aaj ka plan",
+        "aaj ka planner",
+        "today ka plan",
+        "today ka planner",
+        "daily plan",
+        "daily planner",
+        "mera plan bana",
+        "mera plan banao",
+        "aaj kya karna hai",
+        "aaj mujhe kya karna hai",
+        "aaj ka schedule",
+        "today schedule",
+        "schedule bana",
+        "schedule banao",
+        "plan bana de",
+        "plan bana do",
+    ]
+
+    return any(
+        phrase in text
+        for phrase in phrases
+    )
+
+
+def _extract_habit_title(
+    message: str,
+) -> str | None:
+
+    title = message.strip()
+
+    cleanup_phrases = [
+        "daily frequency",
+        "weekly frequency",
+        "monthly frequency",
+        "frequency daily",
+        "frequency weekly",
+        "frequency monthly",
+        "daily",
+        "weekly",
+        "monthly",
+    ]
+
+    for phrase in cleanup_phrases:
+        title = title.replace(
+            phrase,
+            "",
+        )
+
+    title = title.strip(" :,-.")
+    lowered = title.lower()
+
+    patterns = [
+        "ka habit bana de",
+        "ki habit bana de",
+        "ka habit bana",
+        "ki habit bana",
+        "ka habit banao",
+        "ki habit banao",
+        "ka habit create kar",
+        "ki habit create kar",
+        "ka habit create",
+        "ki habit create",
+        "ka habit add kar",
+        "ki habit add kar",
+        "ka habit add",
+        "ki habit add",
+        "habit bana de",
+        "habit bana",
+        "habit banao",
+        "habit create kar",
+        "habit create",
+        "habit add kar",
+        "habit add",
+        "habit daal",
+        "ek habit",
+    ]
+
+    for pattern in patterns:
+        index = lowered.find(pattern)
+
+        if index != -1:
+            title = (
+                title[:index]
+                + title[index + len(pattern):]
+            ).strip()
+            break
+
+    title = title.strip(" :,-.")
+
+    if not title:
+        return None
+
+    return title[:200]
+
+
+# =============================================================
 # TASK INTENTS
 # =============================================================
 
@@ -700,7 +1326,6 @@ def _is_goal_update_request(text: str) -> bool:
     phrases = [
         "goal update",
         "update goal",
-        "goal ki category",
         "goal ki category",
         "goal category",
         "category change",
@@ -917,14 +1542,6 @@ def _extract_task_title(
 
 
 def _extract_goal_id(text: str) -> int | None:
-    """
-    Supports:
-    goal 4
-    goal id 4
-    goal #4
-    goal 4 ki category...
-    """
-
     words = (
         text
         .replace("#", " ")
@@ -937,7 +1554,6 @@ def _extract_goal_id(text: str) -> int | None:
         if word != "goal":
             continue
 
-        # goal id 4
         if (
             index + 2 < len(words)
             and words[index + 1] == "id"
@@ -947,7 +1563,6 @@ def _extract_goal_id(text: str) -> int | None:
             except ValueError:
                 pass
 
-        # goal 4
         if index + 1 < len(words):
             try:
                 return int(words[index + 1])
@@ -991,7 +1606,6 @@ def _extract_goal_title(
 
     title = message.strip()
 
-    # Remove category phrases BEFORE extracting title.
     cleanup_phrases = [
         "career category me",
         "study category me",
@@ -1020,7 +1634,6 @@ def _extract_goal_title(
         )
 
     title = title.strip(" :,-.")
-
     lowered = title.lower()
 
     patterns = [
@@ -1054,7 +1667,6 @@ def _extract_goal_title(
 
     title = title.strip(" :,-.")
 
-    # Remove trailing category word if still present.
     for category in [
         "career",
         "study",
