@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.endpoints.planner import router as planner_router
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.goal import router as goal_router
 from app.api.v1.endpoints.habit import router as habit_router
@@ -22,3 +23,4 @@ api_router.include_router(habit_router)
 api_router.include_router(habit_completion_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(ai_router)
+api_router.include_router(planner_router)

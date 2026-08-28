@@ -610,7 +610,7 @@ def ask_brain(
 
             return "\n".join(lines)
 
-    # =========================================================
+       # =========================================================
     # DAILY PLANNER
     # =========================================================
 
@@ -633,7 +633,7 @@ def ask_brain(
             goals = result["goals"]
 
             lines = [
-                "📅 Aaj ka plan:",
+                "📅 Aaj ka Smart Plan:",
                 "",
             ]
 
@@ -642,29 +642,61 @@ def ask_brain(
                     "Aaj ke liye koi pending task "
                     "ya active habit nahi hai."
                 )
+
             else:
                 for index, item in enumerate(
                     plan,
                     start=1,
                 ):
+                    start_time = item.get(
+                        "start_time",
+                        "--:--",
+                    )
+
+                    end_time = item.get(
+                        "end_time",
+                        "--:--",
+                    )
+
                     if item["type"] == "task":
+
+                        priority = item.get(
+                            "priority",
+                            "medium",
+                        )
+
                         lines.append(
-                            f"{index}. {item['title']} "
-                            f"({item['priority']} priority)"
+                            f"{index}. "
+                            f"{start_time} - {end_time} "
+                            f"→ {item['title']} "
+                            f"({priority} priority)"
                         )
 
                     elif item["type"] == "habit":
+
+                        streak = item.get(
+                            "current_streak",
+                            0,
+                        )
+
+                        frequency = item.get(
+                            "frequency",
+                            "daily",
+                        )
+
                         lines.append(
-                            f"{index}. {item['title']} "
-                            f"(habit, "
-                            f"streak {item['current_streak']})"
+                            f"{index}. "
+                            f"{start_time} - {end_time} "
+                            f"→ {item['title']} "
+                            f"(habit, {frequency}, "
+                            f"streak {streak})"
                         )
 
             if goals:
                 lines.extend(
                     [
                         "",
-                        "🎯 Active goals:",
+                        "🎯 Active Goals:",
                     ]
                 )
 
@@ -687,8 +719,7 @@ def ask_brain(
                 ]
             )
 
-            return "\n".join(lines)    
-
+            return "\n".join(lines)
     # =========================================================
     # VERIFIED DASHBOARD FACTS
     # =========================================================
