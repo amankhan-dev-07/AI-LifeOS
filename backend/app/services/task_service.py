@@ -18,6 +18,8 @@ def create_user_task(
     status: str,
     priority: str,
     due_date,
+    goal_id: int | None = None,
+    estimated_minutes: int = 45,
 ) -> Task:
     """Create a task for the current user."""
 
@@ -29,6 +31,8 @@ def create_user_task(
         status=status,
         priority=priority,
         due_date=due_date,
+        goal_id=goal_id,
+        estimated_minutes=estimated_minutes,
     )
 
 

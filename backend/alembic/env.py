@@ -7,12 +7,17 @@ from sqlalchemy.engine import create_engine
 
 from app.config.settings import settings
 from app.db.base import Base
-# from app.db.base import Base
 from app.models.user import User
 from app.models.task import Task
 from app.models.goal import Goal
 from app.models.habit import Habit
 from app.models.habit_completion import HabitCompletion
+from app.models.planner_event import PlannerEvent
+from app.models.note import Note
+from app.models.transaction import Transaction
+from app.models.notification import Notification
+from app.models.user_preferences import UserPreferences
+from app.models.reminder import Reminder  # noqa: F401
 
 
 config = context.config

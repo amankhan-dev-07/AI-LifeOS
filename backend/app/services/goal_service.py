@@ -17,6 +17,7 @@ def create_user_goal(
     description: str | None,
     category: str,
     target_date,
+    progress: int = 0,
 ) -> Goal:
     """Create a goal for the current user."""
 
@@ -27,6 +28,7 @@ def create_user_goal(
         description=description,
         category=category,
         target_date=target_date,
+        progress=progress,
     )
 
 

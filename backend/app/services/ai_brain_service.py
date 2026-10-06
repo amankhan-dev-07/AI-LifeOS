@@ -1,4 +1,5 @@
 import json
+import re
 import urllib.error
 import urllib.request
 from datetime import date
@@ -30,6 +31,124 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "qwen2.5:1.5b"
 
 
+def _is_hinglish(msg: str) -> bool:
+    if re.search(r"[\u0900-\u097F]", msg):
+        return True
+    lower = msg.lower()
+    words = set(re.findall(r"\b[a-z]+\b", lower))
+    markers = {
+        "bana", "banao", "hai", "hain", "mera", "meri", "mere",
+        "aaj", "kya", "kitne", "kitni", "kitna", "nahi", "bhai",
+        "mujhe", "liye", "aur", "abhi", "chahiye", "kaha", "kaise",
+        "bata", "dikha", "pura", "poora", "khatam", "hata", "mita",
+        "roz", "hafte", "mahine", "wala", "wale", "diya", "gaya",
+        "gayi", "raha", "rahi", "hoga", "hogi", "wala",
+        "kar", "de", "ko", "ka", "ki", "ho", "gaya", "gayi",
+    }
+    if words & markers:
+        return True
+    phrases = [
+        "bana de", "kar de", "ho gaya", "ho gayi", "kya hai",
+        "mera status", "aaj ka", "kitne ", "complete kar",
+        "kar diya", "kar de",
+    ]
+    return any(p in lower for p in phrases)
+
+
+def _cap(s: str | None) -> str:
+    if not s:
+        return ""
+    return s[:1].upper() + s[1:].lower()
+
+
+def _task_created_msg(title: str, priority: str, hi: bool) -> str:
+    if hi:
+        return f"Task create ho gaya.\nName: {title}\nPriority: {_cap(priority)}"
+    return f"Task created successfully.\nName: {title}\nPriority: {_cap(priority)}"
+
+
+def _task_completed_msg(title: str, hi: bool) -> str:
+    if hi:
+        return f"Task complete ho gaya.\nName: {title}"
+    return f"Task completed successfully.\nName: {title}"
+
+
+def _task_deleted_msg(title: str, hi: bool) -> str:
+    if hi:
+        return f"Task delete ho gaya.\nName: {title}"
+    return f"Task deleted successfully.\nName: {title}"
+
+
+def _task_updated_msg(title: str, priority: str, hi: bool) -> str:
+    if hi:
+        return f"Task update ho gaya.\nName: {title}\nPriority: {_cap(priority)}"
+    return f"Task updated successfully.\nName: {title}\nPriority: {_cap(priority)}"
+
+
+def _goal_created_msg(title: str, category: str, hi: bool) -> str:
+    if hi:
+        return f"Goal create ho gaya.\nName: {title}\nCategory: {_cap(category)}"
+    return f"Goal created successfully.\nName: {title}\nCategory: {_cap(category)}"
+
+
+def _goal_completed_msg(title: str, hi: bool) -> str:
+    if hi:
+        return f"Goal complete ho gaya.\nName: {title}"
+    return f"Goal completed successfully.\nName: {title}"
+
+
+def _goal_deleted_msg(title: str, hi: bool) -> str:
+    if hi:
+        return f"Goal delete ho gaya.\nName: {title}"
+    return f"Goal deleted successfully.\nName: {title}"
+
+
+def _goal_updated_msg(title: str, category: str, hi: bool) -> str:
+    if hi:
+        return f"Goal update ho gaya.\nName: {title}\nCategory: {_cap(category)}"
+    return f"Goal updated successfully.\nName: {title}\nCategory: {_cap(category)}"
+
+
+def _habit_created_msg(title: str, freq: str, hi: bool) -> str:
+    if hi:
+        return f"Habit create ho gaya.\nName: {title}\nFrequency: {_cap(freq)}"
+    return f"Habit created successfully.\nName: {title}\nFrequency: {_cap(freq)}"
+
+
+def _habit_checked_msg(title: str, streak: int, best: int, hi: bool) -> str:
+    day = "day" if streak == 1 else "days"
+    if hi:
+        return f"Habit check-in ho gaya.\nName: {title}\nCurrent streak: {streak} {day}"
+    return f"Habit checked in successfully.\nName: {title}\nCurrent streak: {streak} {day}"
+
+
+def _habit_deleted_msg(title: str, hi: bool) -> str:
+    if hi:
+        return f"Habit delete ho gayi.\nName: {title}"
+    return f"Habit deleted successfully.\nName: {title}"
+
+
+def _habit_updated_msg(title: str, freq: str | None, hi: bool) -> str:
+    if freq:
+        if hi:
+            return f"Habit update ho gayi.\nName: {title}\nFrequency: {_cap(freq)}"
+        return f"Habit updated successfully.\nName: {title}\nFrequency: {_cap(freq)}"
+    return f"Habit updated successfully: {title}." if not hi else f"Habit update ho gayi: {title}."
+
+
+def _not_found(entity: str, hi: bool) -> str:
+    if hi:
+        return f"{entity} nahi mila. Naam ya ID check kar le."
+    return f"{entity} not found. Please check the name or ID."
+
+
+def _need_name(entity: str, hi: bool) -> str:
+    if hi:
+        return f"{entity} ka naam bata de, phir main create kar deta hoon."
+    low = entity.lower()
+    return f"Please provide a {low} name."
+
+
 def ask_brain(
     message: str,
     db: Session | None = None,
@@ -46,135 +165,142 @@ def ask_brain(
         )
 
     text = message.lower().strip()
+    hi = _is_hinglish(message)
 
     # =========================================================
     # HABIT COMPLETE
     # =========================================================
 
     if db is not None and user_id is not None:
-        habit_id = _extract_habit_id(text)
+        if _is_habit_complete_request(text):
+            habit_id = _extract_habit_id(text)
+            if habit_id is None:
+                habit_id = _resolve_habit_id_by_name(
+                    text, db, user_id
+                )
+            if habit_id is not None:
+                result = complete_habit_tool(
+                    db=db,
+                    user_id=user_id,
+                    habit_id=habit_id,
+                )
 
-        if (
-            habit_id is not None
-            and _is_habit_complete_request(text)
-        ):
-            result = complete_habit_tool(
-                db=db,
-                user_id=user_id,
-                habit_id=habit_id,
-            )
+                if not result["success"]:
+                    err = result.get("error", "")
+                    if hi:
+                        return f"Habit complete nahi ho paya: {err}" if err else "Habit complete nahi ho paya."
+                    return f"Could not complete habit: {err}" if err else "Could not complete habit."
 
-            if not result["success"]:
-                return f"Habit complete nahi ho paya: {result['error']}"
+                habit = result["habit"]
 
-            habit = result["habit"]
-
-            return (
-                "Done bhai, habit complete kar di:\n"
-                f"• {habit['title']}\n"
-                f"• Current streak: {habit['current_streak']} days\n"
-                f"• Best streak: {habit['longest_streak']} days"
-            )
+                return _habit_checked_msg(
+                    habit["title"],
+                    habit["current_streak"],
+                    habit["longest_streak"],
+                    hi,
+                )
+            if "habit" in text:
+                return _not_found("Habit", hi)
 
     # =========================================================
     # HABIT DELETE
     # =========================================================
 
     if db is not None and user_id is not None:
-        habit_id = _extract_habit_id(text)
+        if _is_habit_delete_request(text):
+            habit_id = _extract_habit_id(text)
+            if habit_id is None:
+                habit_id = _resolve_habit_id_by_name(
+                    text, db, user_id
+                )
+            if habit_id is not None:
+                result = delete_habit_tool(
+                    db=db,
+                    user_id=user_id,
+                    habit_id=habit_id,
+                )
 
-        if (
-            habit_id is not None
-            and _is_habit_delete_request(text)
-        ):
-            result = delete_habit_tool(
-                db=db,
-                user_id=user_id,
-                habit_id=habit_id,
-            )
+                if not result["success"]:
+                    return _not_found("Habit", hi)
 
-            if not result["success"]:
-                return "Habit nahi mila bhai."
+                habit = result["habit"]
 
-            habit = result["habit"]
-
-            return (
-                "Done bhai, habit delete kar di:\n"
-                f"• {habit['title']}"
-            )
+                return _habit_deleted_msg(habit["title"], hi)
+            if "habit" in text:
+                return _not_found("Habit", hi)
 
     # =========================================================
     # HABIT UPDATE
     # =========================================================
 
     if db is not None and user_id is not None:
-        habit_id = _extract_habit_id(text)
-
-        if (
-            habit_id is not None
-            and _is_habit_update_request(text)
-        ):
-            frequency = _extract_habit_frequency(text)
-
-            if frequency is not None:
-                result = update_habit_tool(
-                    db=db,
-                    user_id=user_id,
-                    habit_id=habit_id,
-                    frequency=frequency,
+        if _is_habit_update_request(text):
+            habit_id = _extract_habit_id(text)
+            if habit_id is None:
+                habit_id = _resolve_habit_id_by_name(
+                    text, db, user_id
                 )
+            if habit_id is not None:
+                frequency = _extract_habit_frequency(text)
 
-                if not result["success"]:
-                    return "Habit nahi mila bhai."
+                if frequency is not None:
+                    result = update_habit_tool(
+                        db=db,
+                        user_id=user_id,
+                        habit_id=habit_id,
+                        frequency=frequency,
+                    )
 
-                habit = result["habit"]
+                    if not result["success"]:
+                        return _not_found("Habit", hi)
 
-                return (
-                    "Done bhai, habit update kar di:\n"
-                    f"• {habit['title']}\n"
-                    f"• Frequency: {habit['frequency']}"
-                )
+                    habit = result["habit"]
 
-            if "inactive" in text or "deactivate" in text:
-                result = update_habit_tool(
-                    db=db,
-                    user_id=user_id,
-                    habit_id=habit_id,
-                    is_active=False,
-                )
+                    return _habit_updated_msg(
+                        habit["title"],
+                        habit["frequency"],
+                        hi,
+                    )
 
-                if not result["success"]:
-                    return "Habit nahi mila bhai."
+                if "inactive" in text or "deactivate" in text:
+                    result = update_habit_tool(
+                        db=db,
+                        user_id=user_id,
+                        habit_id=habit_id,
+                        is_active=False,
+                    )
 
-                habit = result["habit"]
+                    if not result["success"]:
+                        return _not_found("Habit", hi)
 
-                return (
-                    "Done bhai, habit deactivate kar di:\n"
-                    f"• {habit['title']}"
-                )
+                    habit = result["habit"]
 
-            if "active" in text or "activate" in text:
-                result = update_habit_tool(
-                    db=db,
-                    user_id=user_id,
-                    habit_id=habit_id,
-                    is_active=True,
-                )
+                    if hi:
+                        return f"Habit deactivate ho gayi: {habit['title']}."
+                    return f"Habit deactivated successfully: {habit['title']}."
 
-                if not result["success"]:
-                    return "Habit nahi mila bhai."
+                if "active" in text or "activate" in text:
+                    result = update_habit_tool(
+                        db=db,
+                        user_id=user_id,
+                        habit_id=habit_id,
+                        is_active=True,
+                    )
 
-                habit = result["habit"]
+                    if not result["success"]:
+                        return _not_found("Habit", hi)
 
-                return (
-                    "Done bhai, habit activate kar di:\n"
-                    f"• {habit['title']}"
-                )
+                    habit = result["habit"]
 
-            return (
-                "Habit me kya update karna hai, "
-                "wo bata de bhai."
-            )
+                    if hi:
+                        return f"Habit activate ho gayi: {habit['title']}."
+                    return f"Habit activated successfully: {habit['title']}."
+
+                if hi:
+                    return "Habit me kya update karna hai, wo bata de."
+                return "What would you like to update in this habit?"
+            if "habit" in text:
+                return _not_found("Habit", hi)
 
     # =========================================================
     # HABIT CREATE
@@ -197,21 +323,19 @@ def ask_brain(
                 )
 
                 if not result["success"]:
-                    return "Habit create nahi ho payi bhai."
+                    if hi:
+                        return "Habit create nahi ho paya."
+                    return "Could not create habit."
 
                 habit = result["habit"]
 
-                return (
-                    "Done bhai, habit create kar di:\n"
-                    f"• {habit['title']}\n"
-                    f"• Frequency: {habit['frequency']}\n"
-                    f"• Current streak: {habit['current_streak']} days"
+                return _habit_created_msg(
+                    habit["title"],
+                    habit["frequency"],
+                    hi,
                 )
 
-            return (
-                "Habit ka naam bata de bhai, "
-                "phir main create kar deta hoon."
-            )
+            return _need_name("Habit", hi)
 
     # =========================================================
     # HABIT COMPLETIONS / HISTORY
@@ -231,19 +355,18 @@ def ask_brain(
             )
 
             if not result["success"]:
-                return "Habit nahi mila bhai."
+                return _not_found("Habit", hi)
 
             habit = result["habit"]
             completions = result["completions"]
 
             if not completions:
-                return (
-                    f"{habit['title']} ki abhi koi "
-                    "completion history nahi hai."
-                )
+                if hi:
+                    return f"{habit['title']} ki abhi koi completion history nahi hai."
+                return f"No completion history yet for {habit['title']}."
 
             lines = [
-                f"{habit['title']} ki completion history:"
+                f"{habit['title']}" + (" ki completion history:" if hi else " — completion history:"),
             ]
 
             for completion in completions:
@@ -251,12 +374,12 @@ def ask_brain(
                     f"• {completion['completed_date']}"
                 )
 
-            lines.append(
-                f"Current streak: {habit['current_streak']} days"
-            )
-            lines.append(
-                f"Best streak: {habit['longest_streak']} days"
-            )
+            if hi:
+                lines.append(f"Current streak: {habit['current_streak']} days")
+                lines.append(f"Best streak: {habit['longest_streak']} days")
+            else:
+                lines.append(f"Current streak: {habit['current_streak']} days")
+                lines.append(f"Best streak: {habit['longest_streak']} days")
 
             return "\n".join(lines)
 
@@ -274,25 +397,29 @@ def ask_brain(
             habits = result["habits"]
 
             if not habits:
-                return "Abhi tumhari koi habits nahi hain."
+                if hi:
+                    return "Abhi tumhari koi habits nahi hain."
+                return "You don't have any habits yet."
 
-            lines = [
-                f"Tumhari total {len(habits)} habits hain:"
-            ]
+            if hi:
+                lines = [f"Tumhari total {len(habits)} habits hain:"]
+            else:
+                lines = [f"You have {len(habits)} habit{'s' if len(habits) != 1 else ''}:"]
 
             for habit in habits:
-                active_status = (
-                    "active"
-                    if habit["is_active"]
-                    else "inactive"
-                )
-
-                lines.append(
-                    f"• {habit['title']} "
-                    f"({active_status}, "
-                    f"{habit['frequency']}, "
-                    f"streak {habit['current_streak']})"
-                )
+                if hi:
+                    active_status = "active" if habit["is_active"] else "inactive"
+                    lines.append(
+                        f"• {habit['title']} "
+                        f"({active_status}, "
+                        f"{habit['frequency']}, "
+                        f"streak {habit['current_streak']})"
+                    )
+                else:
+                    active_status = "Active" if habit["is_active"] else "Inactive"
+                    lines.append(
+                        f"• {habit['title']} — {active_status}, {_cap(habit['frequency'])}"
+                    )
 
             return "\n".join(lines)
 
@@ -301,92 +428,93 @@ def ask_brain(
     # =========================================================
 
     if db is not None and user_id is not None:
-        task_id = _extract_task_id(text)
+        if _is_task_complete_request(text):
+            task_id = _extract_task_id(text)
+            if task_id is None:
+                task_id = _resolve_task_id_by_name(
+                    text, db, user_id
+                )
+            if task_id is not None:
+                result = complete_task_tool(
+                    db=db,
+                    user_id=user_id,
+                    task_id=task_id,
+                )
 
-        if (
-            task_id is not None
-            and _is_task_complete_request(text)
-        ):
-            result = complete_task_tool(
-                db=db,
-                user_id=user_id,
-                task_id=task_id,
-            )
+                if not result["success"]:
+                    return _not_found("Task", hi)
 
-            if not result["success"]:
-                return "Task nahi mila bhai."
+                task = result["task"]
 
-            task = result["task"]
-
-            return (
-                "Done bhai, task complete kar diya:\n"
-                f"• {task['title']}\n"
-                f"• Status: {task['status']}"
-            )
+                return _task_completed_msg(task["title"], hi)
+            if "task" in text:
+                return _not_found("Task", hi)
 
     # =========================================================
     # TASK DELETE
     # =========================================================
 
     if db is not None and user_id is not None:
-        task_id = _extract_task_id(text)
+        if _is_task_delete_request(text):
+            task_id = _extract_task_id(text)
+            if task_id is None:
+                task_id = _resolve_task_id_by_name(
+                    text, db, user_id
+                )
+            if task_id is not None:
+                result = delete_task_tool(
+                    db=db,
+                    user_id=user_id,
+                    task_id=task_id,
+                )
 
-        if (
-            task_id is not None
-            and _is_task_delete_request(text)
-        ):
-            result = delete_task_tool(
-                db=db,
-                user_id=user_id,
-                task_id=task_id,
-            )
+                if not result["success"]:
+                    return _not_found("Task", hi)
 
-            if not result["success"]:
-                return "Task nahi mila bhai."
+                task = result["task"]
 
-            task = result["task"]
-
-            return (
-                "Done bhai, task delete kar diya:\n"
-                f"• {task['title']}"
-            )
+                return _task_deleted_msg(task["title"], hi)
+            if "task" in text or "delete" in text or "remove" in text:
+                return _not_found("Task", hi)
 
     # =========================================================
     # TASK UPDATE
     # =========================================================
 
     if db is not None and user_id is not None:
-        task_id = _extract_task_id(text)
-
-        if (
-            task_id is not None
-            and _is_task_update_request(text)
-        ):
-            priority = _extract_priority_if_present(text)
-
-            if priority is not None:
-                result = update_task_tool(
-                    db=db,
-                    user_id=user_id,
-                    task_id=task_id,
-                    priority=priority,
+        if _is_task_update_request(text):
+            task_id = _extract_task_id(text)
+            if task_id is None:
+                task_id = _resolve_task_id_by_name(
+                    text, db, user_id
                 )
+            if task_id is not None:
+                priority = _extract_priority_if_present(text)
 
-                if not result["success"]:
-                    return "Task nahi mila bhai."
+                if priority is not None:
+                    result = update_task_tool(
+                        db=db,
+                        user_id=user_id,
+                        task_id=task_id,
+                        priority=priority,
+                    )
 
-                task = result["task"]
+                    if not result["success"]:
+                        return _not_found("Task", hi)
 
-                return (
-                    "Done bhai, task update kar diya:\n"
-                    f"• {task['title']}\n"
-                    f"• Priority: {task['priority']}"
-                )
+                    task = result["task"]
 
-            return (
-                "Task me kya update karna hai, "
-                "wo bata de bhai."
-            )
+                    return _task_updated_msg(
+                        task["title"],
+                        task["priority"],
+                        hi,
+                    )
+
+                if hi:
+                    return "Task me kya update karna hai, wo bata de."
+                return "What would you like to update in this task?"
+            if "task" in text or "priority" in text:
+                return _not_found("Task", hi)
 
     # =========================================================
     # TASK CREATE
@@ -406,19 +534,21 @@ def ask_brain(
                     priority=priority,
                 )
 
+                if not result.get("success"):
+                    err = result.get("error", "")
+                    if hi:
+                        return f"Task create nahi ho paya: {err}" if err else "Task create nahi ho paya."
+                    return f"Could not create task: {err}" if err else "Could not create task."
+
                 task = result["task"]
 
-                return (
-                    "Done bhai, task create kar diya:\n"
-                    f"• {task['title']}\n"
-                    f"• Priority: {task['priority']}\n"
-                    f"• Status: {task['status']}"
+                return _task_created_msg(
+                    task["title"],
+                    task["priority"],
+                    hi,
                 )
 
-            return (
-                "Task ka naam bata de bhai, "
-                "phir main create kar deta hoon."
-            )
+            return _need_name("Task", hi)
 
     # =========================================================
     # TASK READ
@@ -434,18 +564,25 @@ def ask_brain(
             tasks = result["tasks"]
 
             if not tasks:
-                return "Abhi tumhare koi tasks nahi hain."
+                if hi:
+                    return "Abhi tumhare koi tasks nahi hain."
+                return "You don't have any tasks yet."
 
-            lines = [
-                f"Tumhare total {len(tasks)} tasks hain:"
-            ]
+            if hi:
+                lines = [f"Tumhare total {len(tasks)} tasks hain:"]
+            else:
+                lines = [f"You have {len(tasks)} task{'s' if len(tasks) != 1 else ''}:"]
 
             for task in tasks:
-                lines.append(
-                    f"• {task['title']} "
-                    f"({task['status']}, "
-                    f"{task['priority']} priority)"
-                )
+                if hi:
+                    status_hi = "pending" if task["status"] == "pending" else task["status"]
+                    lines.append(
+                        f"• {task['title']} — {status_hi}, {_cap(task['priority'])} priority"
+                    )
+                else:
+                    lines.append(
+                        f"• {task['title']} — {_cap(task['status'])}, {_cap(task['priority'])} priority"
+                    )
 
             return "\n".join(lines)
 
@@ -454,92 +591,116 @@ def ask_brain(
     # =========================================================
 
     if db is not None and user_id is not None:
-        goal_id = _extract_goal_id(text)
+        if _is_goal_complete_request(text):
+            goal_id = _extract_goal_id(text)
+            if goal_id is None:
+                goal_id = _resolve_goal_id_by_name(
+                    text, db, user_id
+                )
+            if goal_id is not None:
+                result = complete_goal_tool(
+                    db=db,
+                    user_id=user_id,
+                    goal_id=goal_id,
+                )
 
-        if (
-            goal_id is not None
-            and _is_goal_complete_request(text)
-        ):
-            result = complete_goal_tool(
-                db=db,
-                user_id=user_id,
-                goal_id=goal_id,
-            )
+                if not result["success"]:
+                    return _not_found("Goal", hi)
 
-            if not result["success"]:
-                return "Goal nahi mila bhai."
+                goal = result["goal"]
 
-            goal = result["goal"]
-
-            return (
-                "Done bhai, goal complete kar diya:\n"
-                f"• {goal['title']}\n"
-                f"• Completed: {goal['is_completed']}"
-            )
+                return _goal_completed_msg(goal["title"], hi)
+            if "goal" in text:
+                return _not_found("Goal", hi)
 
     # =========================================================
     # GOAL DELETE
     # =========================================================
 
     if db is not None and user_id is not None:
-        goal_id = _extract_goal_id(text)
+        if _is_goal_delete_request(text):
+            goal_id = _extract_goal_id(text)
+            if goal_id is None:
+                goal_id = _resolve_goal_id_by_name(
+                    text, db, user_id
+                )
+            if goal_id is not None:
+                result = delete_goal_tool(
+                    db=db,
+                    user_id=user_id,
+                    goal_id=goal_id,
+                )
 
-        if (
-            goal_id is not None
-            and _is_goal_delete_request(text)
-        ):
-            result = delete_goal_tool(
-                db=db,
-                user_id=user_id,
-                goal_id=goal_id,
-            )
+                if not result["success"]:
+                    return _not_found("Goal", hi)
 
-            if not result["success"]:
-                return "Goal nahi mila bhai."
+                goal = result["goal"]
 
-            goal = result["goal"]
-
-            return (
-                "Done bhai, goal delete kar diya:\n"
-                f"• {goal['title']}"
-            )
+                return _goal_deleted_msg(goal["title"], hi)
+            if "goal" in text:
+                return _not_found("Goal", hi)
 
     # =========================================================
     # GOAL UPDATE
     # =========================================================
 
     if db is not None and user_id is not None:
-        goal_id = _extract_goal_id(text)
-
-        if (
-            goal_id is not None
-            and _is_goal_update_request(text)
-        ):
-            category = _extract_goal_category(text)
-
-            if category is not None:
-                result = update_goal_tool(
-                    db=db,
-                    user_id=user_id,
-                    goal_id=goal_id,
-                    category=category,
+        if _is_goal_update_request(text):
+            goal_id = _extract_goal_id(text)
+            if goal_id is None:
+                goal_id = _resolve_goal_id_by_name(
+                    text, db, user_id
                 )
+                if goal_id is None and "progress" in text:
+                    try:
+                        result_tmp = get_goals_tool(db=db, user_id=user_id)
+                        goals_tmp = result_tmp.get("goals") or []
+                        if len(goals_tmp) == 1:
+                            goal_id = goals_tmp[0]["id"]
+                    except Exception:
+                        pass
+            if goal_id is not None:
+                progress = _extract_progress(text)
+                if progress is not None:
+                    result = update_goal_tool(
+                        db=db,
+                        user_id=user_id,
+                        goal_id=goal_id,
+                        progress=progress,
+                    )
+                    if not result["success"]:
+                        return _not_found("Goal", hi)
+                    goal = result["goal"]
+                    if hi:
+                        return f"Goal progress update ho gaya.\nName: {goal['title']}\nProgress: {goal['progress']}%"
+                    return f"Goal progress updated successfully.\nName: {goal['title']}\nProgress: {goal['progress']}%"
 
-                if not result["success"]:
-                    return "Goal nahi mila bhai."
+                category = _extract_goal_category(text)
 
-                goal = result["goal"]
+                if category is not None:
+                    result = update_goal_tool(
+                        db=db,
+                        user_id=user_id,
+                        goal_id=goal_id,
+                        category=category,
+                    )
 
-                return (
-                    "Done bhai, goal update kar diya:\n"
-                    f"• {goal['title']}\n"
-                    f"• Category: {goal['category']}"
-                )
+                    if not result["success"]:
+                        return _not_found("Goal", hi)
 
-            return (
-                "Goal me kya update karna hai, "
-                "wo bata de bhai."
-            )
+                    goal = result["goal"]
+
+                    return _goal_updated_msg(
+                        goal["title"],
+                        goal["category"],
+                        hi,
+                    )
+
+                if hi:
+                    return "Goal me kya update karna hai, wo bata de."
+                return "What would you like to update in this goal?"
+            if "goal" in text or "category" in text or "progress" in text:
+                return _not_found("Goal", hi)
 
     # =========================================================
     # GOAL CREATE
@@ -562,19 +723,21 @@ def ask_brain(
                     category=category,
                 )
 
+                if not result.get("success"):
+                    err = result.get("error", "")
+                    if hi:
+                        return f"Goal create nahi ho paya: {err}" if err else "Goal create nahi ho paya."
+                    return f"Could not create goal: {err}" if err else "Could not create goal."
+
                 goal = result["goal"]
 
-                return (
-                    "Done bhai, goal create kar diya:\n"
-                    f"• {goal['title']}\n"
-                    f"• Category: {goal['category']}\n"
-                    f"• Completed: {goal['is_completed']}"
+                return _goal_created_msg(
+                    goal["title"],
+                    goal["category"],
+                    hi,
                 )
 
-            return (
-                "Goal ka naam bata de bhai, "
-                "phir main create kar deta hoon."
-            )
+            return _need_name("Goal", hi)
 
     # =========================================================
     # GOAL READ
@@ -590,32 +753,159 @@ def ask_brain(
             goals = result["goals"]
 
             if not goals:
-                return "Abhi tumhare koi goals nahi hain."
+                if hi:
+                    return "Abhi tumhare koi goals nahi hain."
+                return "You don't have any goals yet."
 
-            lines = [
-                f"Tumhare total {len(goals)} goals hain:"
-            ]
+            if hi:
+                lines = [f"Tumhare total {len(goals)} goals hain:"]
+            else:
+                lines = [f"You have {len(goals)} goal{'s' if len(goals) != 1 else ''}:"]
 
             for goal in goals:
-                status = (
-                    "completed"
-                    if goal["is_completed"]
-                    else "active"
-                )
-
-                lines.append(
-                    f"• {goal['title']} "
-                    f"({status}, {goal['category']})"
-                )
+                if hi:
+                    status = "completed" if goal["is_completed"] else "active"
+                    lines.append(
+                        f"• {goal['title']} — {status.title()}, {_cap(goal['category'])}"
+                    )
+                else:
+                    status = "Completed" if goal["is_completed"] else "Active"
+                    lines.append(
+                        f"• {goal['title']} — {status}, {_cap(goal['category'])}"
+                    )
 
             return "\n".join(lines)
 
+    # =========================================================
+    # NOTES (frontend-local, no backend persistence yet)
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        if _is_note_request(text):
+            has_other_intent = any(
+                fn(text)
+                for fn in [
+                    _is_task_create_request,
+                    _is_task_complete_request,
+                    _is_task_delete_request,
+                    _is_task_update_request,
+                    _is_task_read_request,
+                    _is_goal_create_request,
+                    _is_goal_complete_request,
+                    _is_goal_delete_request,
+                    _is_goal_update_request,
+                    _is_goal_read_request,
+                    _is_habit_create_request,
+                    _is_habit_complete_request,
+                    _is_habit_delete_request,
+                    _is_habit_update_request,
+                    _is_habit_read_request,
+                    _is_habit_history_request,
+                    _is_daily_plan_request,
+                ]
+            )
+            if not has_other_intent:
+                if hi:
+                    return (
+                        "Notes abhi frontend me local store hoti hain, "
+                        "backend database me sync nahi hai. "
+                        "Tu Notes tab me jaake title/content likh ke Save kar sakta hai. "
+                        "Backend support aate hi main tool se execute kar dunga — "
+                        "tab tak fake success claim nahi karunga."
+                    )
+                return (
+                    "Notes are currently stored locally in the frontend "
+                    "and are not synced to the backend database. "
+                    "You can create them in the Notes tab with a title and content, then Save. "
+                    "I'll execute via a backend tool as soon as support is available — "
+                    "I won't claim success until then."
+                )
+
+    # =========================================================
+    # FINANCE (frontend-local, no backend persistence yet)
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        if _is_finance_request(text):
+            has_other_intent = any(
+                fn(text)
+                for fn in [
+                    _is_task_create_request,
+                    _is_task_complete_request,
+                    _is_task_delete_request,
+                    _is_task_update_request,
+                    _is_task_read_request,
+                    _is_goal_create_request,
+                    _is_goal_complete_request,
+                    _is_goal_delete_request,
+                    _is_goal_update_request,
+                    _is_goal_read_request,
+                    _is_habit_create_request,
+                    _is_habit_complete_request,
+                    _is_habit_delete_request,
+                    _is_habit_update_request,
+                    _is_habit_read_request,
+                    _is_habit_history_request,
+                    _is_daily_plan_request,
+                    _is_note_request,
+                ]
+            )
+            if not has_other_intent:
+                dash = dashboard
+                if dash is not None:
+                    if hi:
+                        return (
+                            f"{_format_dashboard(dash, hi)}\n\n"
+                            "Finance (income/expense) abhi frontend me local store hota hai, "
+                            "backend persistence abhi nahi hai — isliye verified LifeOS snapshot upar diya hai. "
+                            "Tu Finance tab me transaction add kar sakta hai; "
+                            "backend support aate hi main tool se real entry karunga."
+                        )
+                    return (
+                        f"{_format_dashboard(dash, hi)}\n\n"
+                        "Finance data is currently stored locally in the frontend "
+                        "and is not yet persisted to the backend. "
+                        "You can add transactions in the Finance tab — "
+                        "I'll create real entries via a backend tool as soon as support is available."
+                    )
+                if hi:
+                    return (
+                        "Finance tracking abhi frontend me local hai, "
+                        "backend database me sync nahi hai. "
+                        "Finance tab me jaake transaction add kar sakta hai."
+                    )
+                return (
+                    "Finance tracking is currently local to the frontend "
+                    "and not synced to the backend database. "
+                    "You can add transactions in the Finance tab."
+                )
+
        # =========================================================
+    # PLANNER CRUD — honest limitation (no persistent event storage)
+    # =========================================================
+
+    if db is not None and user_id is not None:
+        if _is_planner_create_request(text) or _is_planner_update_request(text) or _is_planner_delete_request(text):
+            if hi:
+                return (
+                    "Planner events abhi backend me persistent storage me available nahi hain. "
+                    "Isliye create/update/delete event abhi supported nahi hai. "
+                    "Tumhara smart daily plan tasks aur habits se generate hota hai — "
+                    "\"Show my planner\" ya \"Aaj ka plan\" bol ke verified plan dekh sakta hai."
+                )
+            return (
+                "Planner events are not yet available as persistent database records, "
+                "so creating, updating or deleting individual planner events is not currently supported. "
+                "Your smart daily plan is generated from your tasks and habits — "
+                "try \"Show my planner\" or \"Show my daily plan\" for the verified schedule."
+            )
+
+        # =========================================================
     # DAILY PLANNER
     # =========================================================
 
     if db is not None and user_id is not None:
-        if _is_daily_plan_request(text):
+        if _is_daily_plan_request(text) or _is_planner_read_request(text):
 
             result = get_daily_plan_tool(
                 db=db,
@@ -623,10 +913,9 @@ def ask_brain(
             )
 
             if not result["success"]:
-                return (
-                    "Bhai aaj ka plan banane me "
-                    "problem aa gayi."
-                )
+                if hi:
+                    return "Plan banane me problem aa gayi."
+                return "Could not generate your daily plan."
 
             summary = result["summary"]
             plan = result["plan"]
@@ -738,11 +1027,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["habits"]["active"]
-
-            return (
-                f"Abhi tumhari {count} active "
-                f"{'habit' if count == 1 else 'habits'} hain."
-            )
+            if hi:
+                return f"Abhi tumhari {count} active {'habit' if count == 1 else 'habits'} hain."
+            return f"You have {count} active habit{'s' if count != 1 else ''}."
 
         if _matches(
             text,
@@ -755,11 +1042,9 @@ def ask_brain(
             ],
         ):
             streak = dashboard["habits"]["current_streak"]
-
-            return (
-                f"Tumhari current streak "
-                f"{streak} days ki hai."
-            )
+            if hi:
+                return f"Tumhari current streak {streak} days ki hai."
+            return f"Your current streak is {streak} day{'s' if streak != 1 else ''}."
 
         if _matches(
             text,
@@ -771,11 +1056,9 @@ def ask_brain(
             ],
         ):
             streak = dashboard["habits"]["best_streak"]
-
-            return (
-                f"Tumhari best streak "
-                f"{streak} days ki hai."
-            )
+            if hi:
+                return f"Tumhari best streak {streak} days ki hai."
+            return f"Your best streak is {streak} day{'s' if streak != 1 else ''}."
 
         if _matches(
             text,
@@ -787,11 +1070,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["tasks"]["total"]
-
-            return (
-                f"Tumhare total {count} "
-                f"{'task' if count == 1 else 'tasks'} hain."
-            )
+            if hi:
+                return f"Tumhare total {count} {'task' if count == 1 else 'tasks'} hain."
+            return f"You have {count} task{'s' if count != 1 else ''} in total."
 
         if _matches(
             text,
@@ -803,11 +1084,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["tasks"]["pending"]
-
-            return (
-                f"Tumhare {count} pending "
-                f"{'task' if count == 1 else 'tasks'} hain."
-            )
+            if hi:
+                return f"Tumhare {count} pending {'task' if count == 1 else 'tasks'} hain."
+            return f"You have {count} pending task{'s' if count != 1 else ''}."
 
         if _matches(
             text,
@@ -819,11 +1098,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["tasks"]["completed"]
-
-            return (
-                f"Tumne {count} "
-                f"{'task' if count == 1 else 'tasks'} complete kiye hain."
-            )
+            if hi:
+                return f"Tumne {count} {'task' if count == 1 else 'tasks'} complete kiye hain."
+            return f"You have completed {count} task{'s' if count != 1 else ''}."
 
         if _matches(
             text,
@@ -835,11 +1112,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["goals"]["total"]
-
-            return (
-                f"Tumhare total {count} "
-                f"{'goal' if count == 1 else 'goals'} hain."
-            )
+            if hi:
+                return f"Tumhare total {count} {'goal' if count == 1 else 'goals'} hain."
+            return f"You have {count} goal{'s' if count != 1 else ''} in total."
 
         if _matches(
             text,
@@ -851,11 +1126,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["goals"]["active"]
-
-            return (
-                f"Tumhare {count} active "
-                f"{'goal' if count == 1 else 'goals'} hain."
-            )
+            if hi:
+                return f"Tumhare {count} active {'goal' if count == 1 else 'goals'} hain."
+            return f"You have {count} active goal{'s' if count != 1 else ''}."
 
         if _matches(
             text,
@@ -867,11 +1140,9 @@ def ask_brain(
             ],
         ):
             count = dashboard["goals"]["completed"]
-
-            return (
-                f"Tumne {count} "
-                f"{'goal' if count == 1 else 'goals'} complete kiye hain."
-            )
+            if hi:
+                return f"Tumne {count} {'goal' if count == 1 else 'goals'} complete kiye hain."
+            return f"You have completed {count} goal{'s' if count != 1 else ''}."
 
         if _matches(
             text,
@@ -885,7 +1156,7 @@ def ask_brain(
                 "progress",
             ],
         ):
-            return _format_dashboard(dashboard)
+            return _format_dashboard(dashboard, hi)
 
     # =========================================================
     # GENERAL QUESTION → LOCAL QWEN
@@ -911,6 +1182,9 @@ def _is_habit_complete_request(text: str) -> bool:
         "habit done",
         "habit finish",
         "complete habit",
+        "complete the habit",
+        "mark habit",
+        "mark the habit",
         "complete kar",
         "complete kr",
         "pura kar",
@@ -926,7 +1200,7 @@ def _is_habit_complete_request(text: str) -> bool:
     return any(
         phrase in text
         for phrase in phrases
-    )
+    ) or ("habit" in text and any(w in text for w in ["complete", "done", "finish"]))
 
 
 def _is_habit_delete_request(text: str) -> bool:
@@ -947,29 +1221,31 @@ def _is_habit_delete_request(text: str) -> bool:
 
 
 def _is_habit_update_request(text: str) -> bool:
+    if "frequency" in text and any(w in text for w in ["change", "update", "modify", "set", "kar"]):
+        return True
+    if "habit" in text and any(w in text for w in ["daily", "weekly", "monthly", "roz", "hafte", "mahine"]):
+        if any(w in text for w in ["change", "update", "modify", "set", "kar"]):
+            return True
     phrases = [
         "habit update",
         "update habit",
+        "change habit",
+        "modify habit",
+        "habit modify",
         "habit ki frequency",
-        "habit frequency",
         "frequency change",
         "frequency kar",
         "frequency set",
-        "daily kar",
-        "weekly kar",
-        "monthly kar",
         "habit active",
         "habit inactive",
         "activate habit",
         "deactivate habit",
-        "modify habit",
-        "habit modify",
     ]
-
-    return any(
-        phrase in text
-        for phrase in phrases
-    )
+    if any(phrase in text for phrase in phrases):
+        return True
+    if "habit" in text and any(w in text for w in ["change", "update", "modify", "set"]):
+        return True
+    return False
 
 
 def _is_habit_create_request(text: str) -> bool:
@@ -983,6 +1259,13 @@ def _is_habit_create_request(text: str) -> bool:
         "habit add kar",
         "habit daal",
         "ek habit",
+        "create a habit",
+        "create habit",
+        "make a habit",
+        "make habit",
+        "add a habit",
+        "add habit",
+        "new habit",
     ]
 
     return any(
@@ -1003,12 +1286,39 @@ def _is_habit_read_request(text: str) -> bool:
         "habit dikha",
         "habit list",
         "habits list",
+        "show habits",
+        "show my habits",
+        "list habits",
+        "my habits",
+        "habits status",
+        "show habit",
     ]
 
     return any(
         phrase in text
         for phrase in phrases
     )
+
+
+def _is_note_request(text: str) -> bool:
+    return "note" in text or "notes" in text
+
+
+def _is_finance_request(text: str) -> bool:
+    keywords = [
+        "finance",
+        "transaction",
+        "transactions",
+        "expense",
+        "expenses",
+        "income",
+        "balance",
+        "cash flow",
+        "cashflow",
+        "kharcha",
+        "kamai",
+    ]
+    return any(k in text for k in keywords)
 
 
 def _is_habit_history_request(text: str) -> bool:
@@ -1091,7 +1401,63 @@ def _extract_habit_frequency(
 
     return None
 
+def _is_planner_create_request(text: str) -> bool:
+    if "planner" not in text and "plan" not in text and "event" not in text and "schedule" not in text:
+        return False
+    if any(p in text for p in ["create planner", "add planner", "make planner", "new planner", "planner bana", "planner create", "planner add", "event bana", "event create", "create a planner", "create planner event", "add a planner event"]):
+        return True
+    if "planner" in text and any(w in text for w in ["create", "add", "make", "new", "bana"]):
+        return True
+    if "event" in text and any(w in text for w in ["create", "add", "make", "new", "bana"]):
+        return True
+    return False
+
+
+def _is_planner_read_request(text: str) -> bool:
+    phrases = [
+        "show planner",
+        "show my planner",
+        "list planner",
+        "planner events",
+        "show planner events",
+        "list planner events",
+        "mere planner",
+        "planner dikha",
+        "planner bata",
+        "show my events",
+        "daily planner",
+        "planner list",
+    ]
+    if any(p in text for p in phrases):
+        return True
+    if "planner" in text and any(w in text for w in ["show", "list", "get", "dikha", "bata", "events"]):
+        return True
+    return False
+
+
+def _is_planner_update_request(text: str) -> bool:
+    if "planner" not in text and "event" not in text and "schedule" not in text:
+        return False
+    if any(p in text for p in ["update planner", "change planner", "modify planner", "planner update", "update event", "change event", "modify event", "event update", "change time", "update time"]):
+        return True
+    if ("planner" in text or "event" in text) and any(w in text for w in ["change", "update", "modify", "set"]):
+        return True
+    return False
+
+
+def _is_planner_delete_request(text: str) -> bool:
+    if "planner" not in text and "event" not in text and "schedule" not in text:
+        return False
+    if any(p in text for p in ["delete planner", "remove planner", "planner delete", "delete event", "remove event", "event delete", "planner hata", "event hata"]):
+        return True
+    if ("planner" in text or "event" in text) and any(w in text for w in ["delete", "remove", "hata", "mita"]):
+        return True
+    return False
+
+
 def _is_daily_plan_request(text: str) -> bool:
+    if _is_planner_read_request(text):
+        return False
     phrases = [
         "aaj ka plan",
         "aaj ka planner",
@@ -1110,11 +1476,7 @@ def _is_daily_plan_request(text: str) -> bool:
         "plan bana de",
         "plan bana do",
     ]
-
-    return any(
-        phrase in text
-        for phrase in phrases
-    )
+    return any(phrase in text for phrase in phrases)
 
 
 def _extract_habit_title(
@@ -1130,21 +1492,41 @@ def _extract_habit_title(
         "frequency daily",
         "frequency weekly",
         "frequency monthly",
-        "daily",
-        "weekly",
-        "monthly",
     ]
 
     for phrase in cleanup_phrases:
-        title = title.replace(
-            phrase,
+        title = re.sub(
+            re.escape(phrase),
             "",
+            title,
+            flags=re.IGNORECASE,
         )
 
     title = title.strip(" :,-.")
     lowered = title.lower()
 
     patterns = [
+        "create a habit named",
+        "create a habit called",
+        "create a habit for",
+        "create habit named",
+        "create habit called",
+        "create habit for",
+        "make a habit named",
+        "make a habit called",
+        "make a habit for",
+        "add a habit named",
+        "add a habit called",
+        "add a habit for",
+        "create a habit",
+        "create habit",
+        "make a habit",
+        "make habit",
+        "add a habit",
+        "add habit",
+        "new habit",
+        "ka habit bana do",
+        "ki habit bana do",
         "ka habit bana de",
         "ki habit bana de",
         "ka habit bana",
@@ -1159,6 +1541,7 @@ def _extract_habit_title(
         "ki habit add kar",
         "ka habit add",
         "ki habit add",
+        "habit bana do",
         "habit bana de",
         "habit bana",
         "habit banao",
@@ -1174,13 +1557,33 @@ def _extract_habit_title(
         index = lowered.find(pattern)
 
         if index != -1:
-            title = (
-                title[:index]
-                + title[index + len(pattern):]
-            ).strip()
+            after = title[index + len(pattern):].strip()
+            before = title[:index].strip()
+            if after:
+                title = after
+                if before and pattern.startswith(
+                    ("create", "make", "add", "new")
+                ):
+                    pass
+                elif before:
+                    title = (before + " " + after).strip()
+            else:
+                title = before
+            lowered = title.lower()
             break
 
     title = title.strip(" :,-.")
+    title = title.strip("\"'")
+    for prefix in ["named ", "called ", "for "]:
+        if lowered.startswith(prefix):
+            title = title[len(prefix):].strip()
+            lowered = title.lower()
+    title = title.strip(" :,-.\"'")
+    for suffix in [" daily", " weekly", " monthly"]:
+        if lowered.endswith(suffix) and len(title) > len(suffix):
+            title = title[: -len(suffix)].strip()
+            lowered = title.lower()
+            break
 
     if not title:
         return None
@@ -1202,6 +1605,11 @@ def _is_task_complete_request(text: str) -> bool:
         "task khatam",
         "task finish",
         "task done",
+        "complete task",
+        "complete the task",
+        "mark task",
+        "mark as complete",
+        "finish task",
         "complete kar",
         "complete kr",
         "pura kar",
@@ -1228,6 +1636,8 @@ def _is_task_delete_request(text: str) -> bool:
         "task mita de",
         "delete task",
         "remove task",
+        "delete the task",
+        "remove the task",
     ]
 
     return any(
@@ -1237,11 +1647,15 @@ def _is_task_delete_request(text: str) -> bool:
 
 
 def _is_task_update_request(text: str) -> bool:
+    if "priority" in text and any(w in text for w in ["change", "update", "modify", "set", "kar", "to"]):
+        return True
     phrases = [
         "task update",
         "update task",
-        "task ki priority",
-        "task priority",
+        "change task",
+        "modify task",
+        "task modify",
+        "set task",
         "priority change",
         "priority kar",
         "priority set",
@@ -1251,14 +1665,12 @@ def _is_task_update_request(text: str) -> bool:
         "high priority kar",
         "low priority kar",
         "medium priority kar",
-        "modify task",
-        "task modify",
     ]
-
-    return any(
-        phrase in text
-        for phrase in phrases
-    )
+    if any(phrase in text for phrase in phrases):
+        return True
+    if "task" in text and any(w in text for w in ["change", "update", "modify", "set"]):
+        return True
+    return False
 
 
 def _is_task_create_request(text: str) -> bool:
@@ -1266,6 +1678,7 @@ def _is_task_create_request(text: str) -> bool:
         "task bana",
         "task banao",
         "task bana de",
+        "task bana do",
         "task create",
         "task create kar",
         "task add",
@@ -1273,12 +1686,21 @@ def _is_task_create_request(text: str) -> bool:
         "task daal",
         "task likh",
         "ek task",
+        "create a task",
+        "create task",
+        "make a task",
+        "make task",
+        "add a task",
+        "add task",
+        "new task",
+        "ka task bana do",
+        "ki task bana do",
+        "ka task bana de",
+        "ki task bana de",
+        "ka task bana",
+        "ki task bana",
     ]
-
-    return any(
-        phrase in text
-        for phrase in phrases
-    )
+    return any(phrase in text for phrase in phrases)
 
 
 def _is_task_read_request(text: str) -> bool:
@@ -1293,6 +1715,13 @@ def _is_task_read_request(text: str) -> bool:
         "pending task",
         "kaam bata",
         "kaam dikha",
+        "show tasks",
+        "show my tasks",
+        "list tasks",
+        "my tasks",
+        "tasks status",
+        "show task",
+        "my pending tasks",
     ]
 
     return any(
@@ -1316,6 +1745,10 @@ def _is_goal_complete_request(text: str) -> bool:
         "goal done",
         "goal khatam",
         "complete goal",
+        "complete the goal",
+        "mark goal",
+        "mark the goal",
+        "finish goal",
         "complete kar",
         "complete kr",
         "pura kar",
@@ -1333,7 +1766,7 @@ def _is_goal_complete_request(text: str) -> bool:
     return any(
         phrase in text
         for phrase in phrases
-    )
+    ) or ("goal" in text and any(w in text for w in ["complete", "done", "finish", "khatam"]))
 
 
 def _is_goal_delete_request(text: str) -> bool:
@@ -1354,30 +1787,29 @@ def _is_goal_delete_request(text: str) -> bool:
 
 
 def _is_goal_update_request(text: str) -> bool:
+    has_verb = any(w in text for w in ["change", "update", "modify", "set", "kar", "to"])
+    if any(k in text for k in ["progress", "percent", "%"]):
+        if has_verb and ("goal" in text or "progress" in text):
+            return True
+    if "category" in text and has_verb:
+        return True
     phrases = [
         "goal update",
         "update goal",
+        "change goal",
+        "modify goal",
+        "goal modify",
         "goal ki category",
-        "goal category",
         "category change",
         "category kar",
         "category set",
         "category update",
-        "career kar",
-        "study kar",
-        "health kar",
-        "fitness kar",
-        "personal kar",
-        "finance kar",
-        "business kar",
-        "modify goal",
-        "goal modify",
     ]
-
-    return any(
-        phrase in text
-        for phrase in phrases
-    )
+    if any(phrase in text for phrase in phrases):
+        return True
+    if "goal" in text and has_verb:
+        return True
+    return False
 
 
 def _is_goal_create_request(text: str) -> bool:
@@ -1390,6 +1822,13 @@ def _is_goal_create_request(text: str) -> bool:
         "goal add",
         "goal add kar",
         "ek goal",
+        "create a goal",
+        "create goal",
+        "make a goal",
+        "make goal",
+        "add a goal",
+        "add goal",
+        "new goal",
     ]
 
     return any(
@@ -1408,12 +1847,80 @@ def _is_goal_read_request(text: str) -> bool:
         "goal dikha",
         "goal list",
         "goals list",
+        "show goals",
+        "show my goals",
+        "list goals",
+        "my goals",
+        "goals status",
+        "show goal",
     ]
 
     return any(
         phrase in text
         for phrase in phrases
     )
+
+
+def _resolve_task_id_by_name(text: str, db, user_id: int) -> int | None:
+    try:
+        result = get_tasks_tool(db=db, user_id=user_id)
+        tasks = result.get("tasks") or []
+        tl = text.lower()
+        best = None
+        best_len = 0
+        for t in tasks:
+            title = (t.get("title") or "").lower()
+            if title and title in tl and len(title) > best_len:
+                best = t["id"]
+                best_len = len(title)
+        return best
+    except Exception:
+        return None
+
+
+def _resolve_goal_id_by_name(text: str, db, user_id: int) -> int | None:
+    try:
+        result = get_goals_tool(db=db, user_id=user_id)
+        goals = result.get("goals") or []
+        tl = text.lower()
+        best = None
+        best_len = 0
+        for g in goals:
+            title = (g.get("title") or "").lower()
+            if title and title in tl and len(title) > best_len:
+                best = g["id"]
+                best_len = len(title)
+        return best
+    except Exception:
+        return None
+
+
+def _resolve_habit_id_by_name(text: str, db, user_id: int) -> int | None:
+    try:
+        result = get_habits_tool(db=db, user_id=user_id)
+        habits = result.get("habits") or []
+        tl = text.lower()
+        import re as _re
+        best = None
+        best_len = 0
+        for h in habits:
+            title = (h.get("title") or "").lower()
+            if not title:
+                continue
+            title_words = set(_re.findall(r"\b\w+\b", title))
+            text_words = set(_re.findall(r"\b\w+\b", tl))
+            if title in tl and len(title) > best_len:
+                best = h["id"]
+                best_len = len(title)
+            elif title_words and title_words & text_words:
+                overlap = len(title_words & text_words)
+                score = overlap * 10 + len(title)
+                if overlap >= 1 and score > best_len:
+                    best = h["id"]
+                    best_len = score
+        return best
+    except Exception:
+        return None
 
 
 # =============================================================
@@ -1477,38 +1984,25 @@ def _extract_priority(text: str) -> str:
 def _extract_priority_if_present(
     text: str,
 ) -> str | None:
-
-    if (
-        "high priority" in text
-        or "priority high" in text
-        or "high priority kar" in text
-        or "priority high kar" in text
-    ):
+    if "priority" in text:
+        if "high" in text:
+            return "high"
+        if "medium" in text:
+            return "medium"
+        if "low" in text:
+            return "low"
+    if "high priority" in text or "priority high" in text:
         return "high"
-
-    if (
-        "medium priority" in text
-        or "priority medium" in text
-        or "medium priority kar" in text
-        or "priority medium kar" in text
-    ):
+    if "medium priority" in text or "priority medium" in text:
         return "medium"
-
-    if (
-        "low priority" in text
-        or "priority low" in text
-        or "low priority kar" in text
-        or "priority low kar" in text
-    ):
+    if "low priority" in text or "priority low" in text:
         return "low"
-
     return None
 
 
 def _extract_task_title(
     message: str,
 ) -> str | None:
-
     title = message.strip()
 
     priority_phrases = [
@@ -1521,22 +2015,59 @@ def _extract_task_title(
     ]
 
     for phrase in priority_phrases:
-        title = title.replace(
-            phrase,
+        title = re.sub(
+            re.escape(phrase),
             "",
+            title,
+            flags=re.IGNORECASE,
         )
 
     title = title.strip(" :,-.")
     lowered = title.lower()
 
     patterns = [
+        "create a task named",
+        "create a task called",
+        "create a task for",
+        "create task named",
+        "create task called",
+        "create task for",
+        "make a task named",
+        "make a task called",
+        "make a task for",
+        "make task named",
+        "make task called",
+        "make task for",
+        "add a task named",
+        "add a task called",
+        "add a task for",
+        "add task named",
+        "add task called",
+        "add task for",
+        "create a task",
+        "create task",
+        "make a task",
+        "make task",
+        "add a task",
+        "add task",
+        "new task",
+        "ka task bana do",
+        "ki task bana do",
         "ka task bana de",
+        "ki task bana de",
         "ka task bana",
+        "ki task bana",
         "ka task banao",
+        "ki task banao",
         "ka task create kar",
+        "ki task create kar",
         "ka task create",
+        "ki task create",
         "ka task add kar",
+        "ki task add kar",
         "ka task add",
+        "ki task add",
+        "task bana do",
         "task bana de",
         "task bana",
         "task banao",
@@ -1553,13 +2084,36 @@ def _extract_task_title(
         index = lowered.find(pattern)
 
         if index != -1:
-            title = (
-                title[:index]
-                + title[index + len(pattern):]
-            ).strip()
+            after = title[index + len(pattern):].strip()
+            before = title[:index].strip()
+            if after:
+                title = after
+                if before and pattern.startswith(
+                    ("create", "make", "add", "new")
+                ):
+                    pass
+                elif before:
+                    title = (before + " " + after).strip() if after else before
+            else:
+                title = before
+            lowered = title.lower()
             break
 
     title = title.strip(" :,-.")
+    title = title.strip("\"'")
+
+    for prefix in ["named ", "called ", "for "]:
+        if lowered.startswith(prefix):
+            title = title[len(prefix):].strip()
+            lowered = title.lower()
+
+    title = title.strip(" :,-.\"'")
+    lowered = title.lower()
+    for suf in [" ka", " ki", " ko", " ke", " par", " pe"]:
+        if lowered.endswith(suf) and len(title) > len(suf) + 2:
+            title = title[: -len(suf)].strip()
+            lowered = title.lower()
+    title = title.strip(" :,-.\"'")
 
     if not title:
         return None
@@ -1606,6 +2160,8 @@ def _extract_goal_id(text: str) -> int | None:
 def _extract_goal_category(
     text: str,
 ) -> str | None:
+    if "progress" in text or "percent" in text or "%" in text:
+        return None
 
     categories = [
         "career",
@@ -1628,6 +2184,40 @@ def _extract_goal_category(
 
             return category
 
+    return None
+
+
+def _extract_progress(text: str) -> int | None:
+    m = re.search(r"(\d{1,3})\s*%", text)
+    if m:
+        try:
+            v = int(m.group(1))
+            return max(0, min(100, v))
+        except ValueError:
+            pass
+    m = re.search(r"progress.*?(\d{1,3})", text)
+    if m:
+        try:
+            v = int(m.group(1))
+            return max(0, min(100, v))
+        except ValueError:
+            pass
+    m = re.search(r"(\d{1,3})\s*(?:percent|percentage)", text)
+    if m:
+        try:
+            v = int(m.group(1))
+            return max(0, min(100, v))
+        except ValueError:
+            pass
+    if "progress" in text:
+        nums = re.findall(r"\b(\d{1,3})\b", text)
+        for token in reversed(nums):
+            try:
+                v = int(token)
+                if 0 <= v <= 100:
+                    return v
+            except ValueError:
+                continue
     return None
 
 
@@ -1659,15 +2249,36 @@ def _extract_goal_title(
     ]
 
     for phrase in cleanup_phrases:
-        title = title.replace(
-            phrase,
+        title = re.sub(
+            re.escape(phrase),
             "",
+            title,
+            flags=re.IGNORECASE,
         )
 
     title = title.strip(" :,-.")
     lowered = title.lower()
 
     patterns = [
+        "create a goal named",
+        "create a goal called",
+        "create a goal for",
+        "create goal named",
+        "create goal called",
+        "create goal for",
+        "make a goal named",
+        "make a goal called",
+        "make a goal for",
+        "add a goal named",
+        "add a goal called",
+        "add a goal for",
+        "create a goal",
+        "create goal",
+        "make a goal",
+        "make goal",
+        "add a goal",
+        "add goal",
+        "new goal",
         "ka goal bana de",
         "ka goal bana",
         "ka goal banao",
@@ -1690,13 +2301,28 @@ def _extract_goal_title(
         index = lowered.find(pattern)
 
         if index != -1:
-            title = (
-                title[:index]
-                + title[index + len(pattern):]
-            ).strip()
+            after = title[index + len(pattern):].strip()
+            before = title[:index].strip()
+            if after:
+                title = after
+                if before and pattern.startswith(
+                    ("create", "make", "add", "new")
+                ):
+                    pass
+                elif before:
+                    title = (before + " " + after).strip()
+            else:
+                title = before
+            lowered = title.lower()
             break
 
     title = title.strip(" :,-.")
+    title = title.strip("\"'")
+    for prefix in ["named ", "called ", "for "]:
+        if lowered.startswith(prefix):
+            title = title[len(prefix):].strip()
+            lowered = title.lower()
+    title = title.strip(" :,-.\"'")
 
     for category in [
         "career",
@@ -1740,14 +2366,28 @@ def _matches(
 
 def _format_dashboard(
     dashboard: dict,
+    hi: bool = True,
 ) -> str:
 
     tasks = dashboard["tasks"]
     goals = dashboard["goals"]
     habits = dashboard["habits"]
 
+    if hi:
+        return (
+            "Tumhara current LifeOS status:\n"
+            f"• Tasks: {tasks['total']} total, "
+            f"{tasks['pending']} pending, "
+            f"{tasks['completed']} completed.\n"
+            f"• Goals: {goals['total']} total, "
+            f"{goals['active']} active, "
+            f"{goals['completed']} completed.\n"
+            f"• Habits: {habits['active']} active, "
+            f"current streak {habits['current_streak']} days, "
+            f"best streak {habits['best_streak']} days."
+        )
     return (
-        "Tumhara current LifeOS status:\n"
+        "Your current LifeOS status:\n"
         f"• Tasks: {tasks['total']} total, "
         f"{tasks['pending']} pending, "
         f"{tasks['completed']} completed.\n"
@@ -1768,6 +2408,7 @@ def _format_dashboard(
 def _ask_local_model(
     message: str,
     dashboard: dict | None = None,
+    hi: bool | None = None,
 ) -> str:
 
     context = ""
@@ -1850,14 +2491,36 @@ Answer:
             "I couldn't generate a response.",
         ).strip()
 
-    except urllib.error.URLError as exc:
+    except urllib.error.URLError:
+        is_hi = _is_hinglish(message)
+        fallback = dashboard and _format_dashboard(dashboard, is_hi)
+        if fallback:
+            if is_hi:
+                return f"{fallback}\n\n(Ollama offline — verified LifeOS snapshot dikhaya gaya hai.)"
+            return f"{fallback}\n\n(Ollama offline — showing verified LifeOS snapshot.)"
+        if is_hi:
+            return "AI brain offline hai (Ollama running nahi hai). Tumhare tasks, goals aur habits abhi bhi available hain."
+        return "AI brain is offline (Ollama not running). Your tasks, goals and habits are still available."
 
-        raise RuntimeError(
-            "Ollama is not running. Please start Ollama first."
-        ) from exc
-
-    except json.JSONDecodeError as exc:
-
-        raise RuntimeError(
-            "Invalid response received from Ollama."
-        ) from exc
+    except json.JSONDecodeError:
+        if _is_hinglish(message):
+            return "AI response invalid aaya — please dobara try karo."
+        return "AI response was invalid — please try again."
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "Ollama" in msg:
+            is_hi = _is_hinglish(message)
+            fallback = None
+            try:
+                if dashboard is not None:
+                    fallback = _format_dashboard(dashboard, is_hi)
+            except Exception:
+                fallback = None
+            if fallback:
+                if is_hi:
+                    return f"{fallback}\n\n(Ollama offline — verified LifeOS snapshot dikhaya gaya hai.)"
+                return f"{fallback}\n\n(Ollama offline — showing verified LifeOS snapshot.)"
+            if is_hi:
+                return "AI brain offline hai — local LLM chat ke liye Ollama start karo."
+            return "AI brain is offline — please start Ollama to enable local LLM chat."
+        raise

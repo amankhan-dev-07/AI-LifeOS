@@ -10,6 +10,7 @@ def create_habit(
     title: str,
     description: str | None,
     frequency: str,
+    goal_id: int | None = None,
 ) -> Habit:
     """Create a new habit for a user."""
 
@@ -18,6 +19,7 @@ def create_habit(
         title=title,
         description=description,
         frequency=frequency,
+        goal_id=goal_id,
     )
 
     db.add(habit)
@@ -65,8 +67,7 @@ def update_habit(
     """Update an existing habit."""
 
     for field, value in updates.items():
-        if value is not None:
-            setattr(habit, field, value)
+        setattr(habit, field, value)
 
     db.commit()
     db.refresh(habit)

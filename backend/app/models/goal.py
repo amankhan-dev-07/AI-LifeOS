@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -42,6 +42,12 @@ class Goal(Base):
         nullable=True,
     )
 
+    progress: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
     is_completed: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -50,18 +56,44 @@ class Goal(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        nullable=False,
         default=datetime.utcnow,
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        nullable=False,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+        nullable=False,
     )
 
     user = relationship(
         "User",
         back_populates="goals",
+    )
+    tasks = relationship(
+        "Task",
+        back_populates="goal",
+        # Task is owned by User (User.tasks has delete-orphan), not by Goal.
+        # The FK has ON DELETE SET NULL — tasks survive goal deletion.
+        # No ORM cascades needed; the DB handles the NULLing.
+        cascade="",
+    )
+    habits = relationship(
+        "Habit",
+        back_populates="goal",
+        cascade="all, delete-orphan",
+    )
+    notes = relationship(
+        "Note",
+        back_populates="goal",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_goals_user_completed",
+            "user_id",
+            "is_completed",
+        ),
     )

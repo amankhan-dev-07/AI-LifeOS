@@ -11,15 +11,19 @@ def create_goal(
     description: str | None,
     category: str,
     target_date,
+    progress: int = 0,
 ) -> Goal:
     """Create a new goal for a user."""
 
+    p = max(0, min(100, int(progress)))
     goal = Goal(
         user_id=user_id,
         title=title,
         description=description,
         category=category,
         target_date=target_date,
+        progress=p,
+        is_completed=(p >= 100),
     )
 
     db.add(goal)
@@ -66,8 +70,19 @@ def update_goal(
 ) -> Goal:
     """Update an existing goal."""
 
+    if "progress" in updates and updates["progress"] is not None:
+        p = max(0, min(100, int(updates["progress"])))
+        updates["progress"] = p
+        if "is_completed" not in updates or updates["is_completed"] is None:
+            updates["is_completed"] = (p >= 100)
+    elif "is_completed" in updates and updates["is_completed"] is not None:
+        if updates["is_completed"] and goal.progress < 100:
+            updates["progress"] = 100
+        elif not updates["is_completed"] and goal.progress >= 100:
+            updates["progress"] = 0
+
     for field, value in updates.items():
-        if value is not None:
+        if value is not None and hasattr(goal, field):
             setattr(goal, field, value)
 
     db.commit()

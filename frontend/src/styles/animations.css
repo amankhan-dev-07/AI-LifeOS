@@ -1,0 +1,301 @@
+/* ============================================================
+   ANIMATIONS.CSS — Minimal, GPU-friendly motion language
+   No continuous loops, no box-shadow/filter/width animations.
+   ============================================================ */
+
+/* -----------------------------------------------------------------
+   KEYFRAMES — Short, purposeful, compositor-friendly
+   ----------------------------------------------------------------- */
+
+/* Fade */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Fade + Translate Y (enter/exit) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutUp {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes fadeOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+/* Scale */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes scaleInBounce {
+  from { opacity: 0; transform: scale(0.9); }
+  60% { transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Slide */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-12px); }
+}
+
+/* Reveal Layer (stagger-friendly) */
+@keyframes revealLayer {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Shimmer (transform-based, cheap) — for skeletons only */
+@keyframes shimmer {
+  from { transform: translateX(-200%); }
+  to { transform: translateX(200%); }
+}
+
+/* Spin (for loading spinners only) */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Ping (single use for "recording/live" indicator, not continuous) */
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+/* -----------------------------------------------------------------
+   UTILITY CLASSES — Only these
+   ----------------------------------------------------------------- */
+
+/* Fade */
+.animate-fadeIn { animation: fadeIn var(--duration-normal) var(--ease-out); }
+.animate-fadeOut { animation: fadeOut var(--duration-fast) var(--ease-out); }
+
+/* Fade + Translate */
+.animate-fadeInUp { animation: fadeInUp var(--duration-normal) var(--ease-out); }
+.animate-fadeInDown { animation: fadeInDown var(--duration-normal) var(--ease-out); }
+.animate-fadeOutUp { animation: fadeOutUp var(--duration-fast) var(--ease-out); }
+.animate-fadeOutDown { animation: fadeOutDown var(--duration-fast) var(--ease-out); }
+
+/* Scale */
+.animate-scaleIn { animation: scaleIn var(--duration-normal) var(--ease-spring); }
+.animate-scaleOut { animation: scaleOut var(--duration-fast) var(--ease-out); }
+.animate-scaleInBounce { animation: scaleInBounce var(--duration-slower) var(--ease-spring); }
+
+/* Slide */
+.animate-slideInRight { animation: slideInRight var(--duration-normal) var(--ease-out); }
+.animate-slideOutRight { animation: slideOutRight var(--duration-fast) var(--ease-out); }
+.animate-slideInLeft { animation: slideInLeft var(--duration-normal) var(--ease-out); }
+.animate-slideOutLeft { animation: slideOutLeft var(--duration-fast) var(--ease-out); }
+
+/* Reveal Layer */
+.animate-revealLayer { animation: revealLayer var(--duration-normal) var(--ease-out); }
+
+/* Shimmer (skeletons only) */
+.animate-shimmer { animation: shimmer 1.5s ease-in-out infinite; }
+
+/* Spin */
+.animate-spin { animation: spin 1s linear infinite; }
+
+/* Ping (single indicator only) */
+.animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+/* -----------------------------------------------------------------
+   STAGGER HELPERS (no 3D variants)
+   ----------------------------------------------------------------- */
+
+.stagger-in > * {
+  animation: fadeInUp var(--duration-normal) var(--ease-out) both;
+}
+
+.stagger-in > *:nth-child(1)  { animation-delay: calc(1 * 60ms); }
+.stagger-in > *:nth-child(2)  { animation-delay: calc(2 * 60ms); }
+.stagger-in > *:nth-child(3)  { animation-delay: calc(3 * 60ms); }
+.stagger-in > *:nth-child(4)  { animation-delay: calc(4 * 60ms); }
+.stagger-in > *:nth-child(5)  { animation-delay: calc(5 * 60ms); }
+.stagger-in > *:nth-child(6)  { animation-delay: calc(6 * 60ms); }
+.stagger-in > *:nth-child(7)  { animation-delay: calc(7 * 60ms); }
+.stagger-in > *:nth-child(8)  { animation-delay: calc(8 * 60ms); }
+.stagger-in > *:nth-child(9)  { animation-delay: calc(9 * 60ms); }
+.stagger-in > *:nth-child(10) { animation-delay: calc(10 * 60ms); }
+.stagger-in > *:nth-child(11) { animation-delay: calc(11 * 60ms); }
+.stagger-in > *:nth-child(12) { animation-delay: calc(12 * 60ms); }
+
+.stagger-in-fast > * {
+  animation: fadeInUp var(--duration-fast) var(--ease-out) both;
+}
+
+.stagger-in-fast > *:nth-child(1)  { animation-delay: calc(1 * 30ms); }
+.stagger-in-fast > *:nth-child(2)  { animation-delay: calc(2 * 30ms); }
+.stagger-in-fast > *:nth-child(3)  { animation-delay: calc(3 * 30ms); }
+.stagger-in-fast > *:nth-child(4)  { animation-delay: calc(4 * 30ms); }
+.stagger-in-fast > *:nth-child(5)  { animation-delay: calc(5 * 30ms); }
+.stagger-in-fast > *:nth-child(6)  { animation-delay: calc(6 * 30ms); }
+.stagger-in-fast > *:nth-child(7)  { animation-delay: calc(7 * 30ms); }
+.stagger-in-fast > *:nth-child(8)  { animation-delay: calc(8 * 30ms); }
+.stagger-in-fast > *:nth-child(9)  { animation-delay: calc(9 * 30ms); }
+.stagger-in-fast > *:nth-child(10) { animation-delay: calc(10 * 30ms); }
+.stagger-in-fast > *:nth-child(11) { animation-delay: calc(11 * 30ms); }
+.stagger-in-fast > *:nth-child(12) { animation-delay: calc(12 * 30ms); }
+.stagger-in-fast > *:nth-child(13) { animation-delay: calc(13 * 30ms); }
+.stagger-in-fast > *:nth-child(14) { animation-delay: calc(14 * 30ms); }
+.stagger-in-fast > *:nth-child(15) { animation-delay: calc(15 * 30ms); }
+.stagger-in-fast > *:nth-child(16) { animation-delay: calc(16 * 30ms); }
+
+.stagger-in-med > * {
+  animation: fadeInUp var(--duration-normal) var(--ease-out) both;
+}
+
+.stagger-in-med > *:nth-child(1)  { animation-delay: calc(1 * 50ms); }
+.stagger-in-med > *:nth-child(2)  { animation-delay: calc(2 * 50ms); }
+.stagger-in-med > *:nth-child(3)  { animation-delay: calc(3 * 50ms); }
+.stagger-in-med > *:nth-child(4)  { animation-delay: calc(4 * 50ms); }
+.stagger-in-med > *:nth-child(5)  { animation-delay: calc(5 * 50ms); }
+.stagger-in-med > *:nth-child(6)  { animation-delay: calc(6 * 50ms); }
+.stagger-in-med > *:nth-child(7)  { animation-delay: calc(7 * 50ms); }
+.stagger-in-med > *:nth-child(8)  { animation-delay: calc(8 * 50ms); }
+.stagger-in-med > *:nth-child(9)  { animation-delay: calc(9 * 50ms); }
+.stagger-in-med > *:nth-child(10) { animation-delay: calc(10 * 50ms); }
+.stagger-in-med > *:nth-child(11) { animation-delay: calc(11 * 50ms); }
+.stagger-in-med > *:nth-child(12) { animation-delay: calc(12 * 50ms); }
+
+/* -----------------------------------------------------------------
+   PAGE TRANSITIONS
+   ----------------------------------------------------------------- */
+
+.page-enter {
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+}
+
+.page-enter-active {
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+}
+
+.page-exit {
+  animation: fadeOut var(--duration-fast) var(--ease-out);
+}
+
+.page-exit-active {
+  animation: fadeOut var(--duration-fast) var(--ease-out);
+}
+
+/* -----------------------------------------------------------------
+   HOVER / INTERACTION (GPU-friendly: transform + opacity only)
+   ----------------------------------------------------------------- */
+
+.hover-lift {
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.hover-scale {
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale:active {
+  transform: scale(0.98);
+}
+
+/* -----------------------------------------------------------------
+   REDUCED MOTION — Global override (preserved and strengthened)
+   ----------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Shimmer is transform-based but still animation — disable it */
+  .animate-shimmer {
+    animation: none !important;
+  }
+
+  /* Stagger helpers become instant */
+  .stagger-in > *,
+  .stagger-in-fast > *,
+  .stagger-in-med > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------
+   OFF-SCREEN PAUSE — Toggle via JS IntersectionObserver
+   Add .animate-pause-offscreen to elements with continuous animations
+   (e.g., .animate-shimmer on skeletons in long lists)
+   ----------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-pause-offscreen {
+    animation-play-state: paused;
+  }
+
+  .animate-pause-offscreen.in-viewport {
+    animation-play-state: running;
+  }
+}
+
+/* -----------------------------------------------------------------
+   PRINT — Disable animations
+   ----------------------------------------------------------------- */
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

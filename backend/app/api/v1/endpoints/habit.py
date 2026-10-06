@@ -36,6 +36,7 @@ def create_habit(
         title=data.title,
         description=data.description,
         frequency=data.frequency,
+        goal_id=data.goal_id,
     )
 
     return HabitResponse.model_validate(habit)

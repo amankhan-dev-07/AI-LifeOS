@@ -116,10 +116,17 @@ def complete_habit(
     )
 
     if existing_completion:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Habit is already completed for this date.",
+        completions = get_completions_by_habit(
+            db=db,
+            habit_id=habit.id,
         )
+        calculate_streaks(
+            habit=habit,
+            completions=completions,
+        )
+        db.commit()
+        db.refresh(habit)
+        return existing_completion
 
     completion = create_completion(
         db=db,

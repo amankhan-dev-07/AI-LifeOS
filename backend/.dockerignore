@@ -1,0 +1,21 @@
+# Keep local secrets, virtualenvs and build artefacts out of the build context.
+# Without this, `docker build` uploads backend/.env (which holds a real
+# DATABASE_URL with a password) to the daemon even though the Dockerfile never
+# copies it into a layer.
+
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+*.db
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+verify_phase*.py
+migrate_goals_progress.py

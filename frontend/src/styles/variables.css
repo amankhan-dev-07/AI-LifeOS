@@ -1,0 +1,365 @@
+:root {
+  /* ============================================================
+     AI-LIFEOS SIGNATURE COLOR SYSTEM — Dark (obsidian / deep neutral)
+     Single accent language: CYAN (primary) + VIOLET (secondary).
+     Neutral surface hierarchy does the structural work; the accent
+     is reserved for the brand mark, primary CTA, active navigation,
+     focus/selection and progress moments.
+     ============================================================ */
+
+  /* Page Backgrounds — 4 Level Hierarchy */
+  --bg: 5 7 13;
+  --bg-elevated: 13 17 28;
+  --bg-deep: 8 10 17;
+
+  /* Level 1: Page background — #05070D */
+  --surface-1: 5 7 13;
+  /* Level 2: Secondary surface / navigation / subtle panels — #0D111C */
+  --surface-2: 13 17 28;
+  /* Level 3: Primary cards */
+  --surface-3: 17 22 33;
+  /* Level 4: Elevated interactive surfaces / dialogs / command surfaces — #141925 */
+  --surface-4: 20 25 37;
+
+  /* Surfaces (legacy aliases) */
+  --surface: 13 17 28;
+  --surface-hover: 20 25 37;
+  --surface-active: 26 32 46;
+
+  /* Cards (legacy aliases) */
+  --card: 17 22 33;
+  --card-hover: 24 30 43;
+  --card-active: 30 37 52;
+
+  /* Borders — #1E2635 */
+  --border: 30 38 53;
+  --border-subtle: 22 29 41;
+  --border-strong: 52 63 82;
+  --border-focus: 0 217 255;
+  --border-hover: 44 54 72;
+
+  /* Text — Stronger hierarchy */
+  --text-primary: 241 245 249;
+  --text-secondary: 148 163 184;
+  --text-tertiary: 124 139 161;
+  --text-muted: 100 116 139;
+  --text-disabled: 71 85 105;
+  --text-inverse: 8 10 14;
+  --text-subtle: 74 88 108;
+
+  /* Accent System (semantic, not decorative)
+     `--accent` is the CYAN anchor; `--accent-secondary` is the VIOLET
+     counterpart. `--accent-soft` is a TINT, not a second solid colour —
+     it is consumed as `rgb(var(--accent-soft))` behind accent-coloured
+     text, so it carries its own alpha.
+
+     `--accent-text` exists because the accent has TWO jobs that need
+     different contrast, and one token cannot serve both. As a FILL (a
+     button, a progress bar, a focus ring, the gradient's cyan end) the
+     brand cyan is correct. As 11–12px TEXT it has to clear 4.5:1, and on a
+     near-white page brand cyan does not. So: accents used for fills stay
+     `--accent`; accents used for small text read `--accent-text`. In dark
+     mode the two are the same value, because #00D9FF on #05070D is ~11:1
+     and there is nothing to correct. */
+  --accent: 0 217 255;
+  --accent-hover: 56 189 248;
+  --accent-text: 56 189 248;
+  --accent-soft: 0 217 255 / 0.12;
+  --accent-glow: 0 217 255;
+  --accent-secondary: 139 92 246;
+  --accent-secondary-soft: 139 92 246 / 0.12;
+  --accent-tertiary: 96 165 250;
+  --accent-tertiary-soft: 96 165 250 / 0.12;
+
+  /* Semantic States */
+  --success: 52 211 153;
+  --success-soft: 52 211 153 / 0.12;
+  --warning: 251 191 36;
+  --warning-soft: 251 191 36 / 0.12;
+  --danger: 248 113 113;
+  --danger-soft: 248 113 113 / 0.12;
+
+  /* Focus Ring */
+  --focus-ring: 0 0 0 3px rgb(var(--accent) / 0.35);
+  --focus-ring-inset: inset 0 0 0 2px rgb(var(--accent));
+
+  /* Radius Scale */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* Depth / Shadow Scale (restrained, no glow-heavy shadows) */
+  --depth-1: 0 1px 2px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.06);
+  --depth-2: 0 4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.08);
+  --depth-3: 0 8px 16px rgba(0,0,0,0.18), 0 4px 8px rgba(0,0,0,0.10);
+  --depth-4: 0 16px 32px rgba(0,0,0,0.22), 0 8px 16px rgba(0,0,0,0.12);
+
+  --shadow-card: var(--depth-2);
+  --shadow-card-hover: var(--depth-3);
+  --shadow-elevated: var(--depth-4);
+
+  /* Gradients
+     The signature gradient is deliberately used in only a few places — the
+     brand mark, progress fill, active-nav rule, gradient text. It is NOT a
+     card background and NOT a heading treatment. */
+  --gradient-brand: linear-gradient(135deg, rgb(0 217 255) 0%, rgb(139 92 246) 100%);
+  --gradient-brand-hover: linear-gradient(135deg, rgb(56 189 248) 0%, rgb(124 58 237) 100%);
+  --gradient-surface: linear-gradient(180deg, rgb(var(--surface)), rgb(var(--surface-hover)));
+  --gradient-card: linear-gradient(180deg, rgb(var(--card)), rgb(var(--card-hover)));
+
+  /* Timing / Easing */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 180ms;
+  --duration-slow: 280ms;
+  --duration-slower: 400ms;
+  --duration-slowest: 600ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --transition-fast: var(--duration-fast) var(--ease-out);
+  --transition-normal: var(--duration-normal) var(--ease-out);
+  --transition-slow: var(--duration-slow) var(--ease-out);
+  --transition-slower: var(--duration-slower) var(--ease-out);
+
+  /* Z-Index Scale */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+
+  /* Typography Scale — Display + Technical hierarchy */
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-display: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --text-h1: clamp(1.75rem, 1.375rem + 1.5vw, 2.5rem);
+  --text-h2: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --text-h3: clamp(1.25rem, 1.125rem + 0.5vw, 1.5rem);
+  --text-lg: 1.125rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+  --text-micro: 0.625rem;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.2em;
+
+  /* Control heights — Unified system */
+  --control-h-xs: 32px;
+  --control-h-sm: 36px;
+  --control-h-md: 40px;
+  --control-h-lg: 44px;
+  --control-h-xl: 48px;
+
+  /* Spacing scale — More granular for editorial layouts */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Icon/control inset geometry — the single source of truth for how far
+     inside a control an adornment sits, and therefore how much padding the
+     control must reserve so text can never run under it. Shared with
+     theme.css, which consumes these in its icon-clearance rules. */
+  --inset-icon-left: 12px;
+  --inset-icon-right: 8px;
+  --clearance-icon-left: 44px;
+  --clearance-icon-right: 48px;
+  --clearance-chevron: 36px;
+
+  /* Chevron for selects.
+     WHY LITERAL COLOURS: this is a `url("data:image/svg+xml,…")`. A data URI
+     is parsed as its own document and cannot see the host's custom
+     properties, so `stroke='rgb(var(--text-tertiary))'` resolves to nothing —
+     an invalid paint value, and the chevron silently renders as an empty
+     image. The previous token used exactly that form. Literal hex per theme
+     is the only form that works inside a data URI; theming is therefore
+     done here, once, rather than in the rule that consumes it. */
+  --chevron-svg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237C8BA1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  --chevron-svg-focus: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300D9FF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* ============================================================
+   LIGHT MODE — cool near-white base, white cards, strong contrast.
+   Not pure white: the page base is #F7F8FB so cards can read as
+   raised against it, and every border stays visible.
+   ============================================================ */
+
+:root:not(.dark) {
+  /* Page Backgrounds — 4 Level Hierarchy */
+  --bg: 247 248 251;
+  --bg-elevated: 255 255 255;
+  --bg-deep: 241 243 247;
+
+  /* Level 1: Page background — #F7F8FB */
+  --surface-1: 247 248 251;
+  /* Level 2: Secondary surface / navigation / subtle panels */
+  --surface-2: 241 243 248;
+  /* Level 3: Primary cards — #FFFFFF */
+  --surface-3: 255 255 255;
+  /* Level 4: Elevated interactive surfaces / inputs / dialogs */
+  --surface-4: 255 255 255;
+
+  /* Surfaces (legacy aliases) */
+  --surface: 241 243 248;
+  --surface-hover: 233 236 242;
+  --surface-active: 225 229 237;
+
+  /* Cards (legacy aliases) */
+  --card: 255 255 255;
+  --card-hover: 248 250 252;
+  --card-active: 241 243 248;
+
+  /* Borders — #E2E8F0 */
+  --border: 226 232 240;
+  --border-subtle: 226 232 240;
+  --border-strong: 148 163 184;
+  --border-focus: 8 145 178;
+  --border-hover: 203 213 225;
+
+  /* Text — Stronger hierarchy. No faint text anywhere in the ramp. */
+  --text-primary: 15 23 42;
+  --text-secondary: 71 85 105;
+  --text-tertiary: 100 116 139;
+  --text-muted: 90 105 128;
+  --text-disabled: 71 85 105;
+  /* Dark, not light: in light mode the accent is a deep cyan, and dark text
+     on it out-contrast light text on it (4.6:1 vs 3.7:1). `--text-inverse`
+     is "text sitting ON an accent/solid fill" in both themes. */
+  --text-inverse: 15 23 42;
+  --text-subtle: 113 128 150;
+
+  /* Accent System (same hues, tuned for a light background) */
+  --accent: 8 145 178;
+  --accent-hover: 7 126 155;
+  /* #0369A1 — the same cyan family, darkened until it clears 4.5:1 as
+     11–12px text on the #F7F8FB page. Used for accent-coloured TEXT only;
+     fills keep the brand #0891B2. */
+  --accent-text: 3 105 161;
+  --accent-soft: 8 145 178 / 0.1;
+  --accent-glow: 8 145 178;
+  --accent-secondary: 124 58 237;
+  --accent-secondary-soft: 124 58 237 / 0.1;
+  --accent-tertiary: 37 99 235;
+  --accent-tertiary-soft: 37 99 235 / 0.1;
+
+  /* Semantic States */
+  --success: 5 150 105;
+  --success-soft: 5 150 105 / 0.1;
+  --warning: 217 119 6;
+  --warning-soft: 217 119 6 / 0.1;
+  --danger: 220 38 38;
+  --danger-soft: 220 38 38 / 0.1;
+
+  /* Focus Ring (same) */
+  --focus-ring: 0 0 0 3px rgb(var(--accent) / 0.35);
+  --focus-ring-inset: inset 0 0 0 2px rgb(var(--accent));
+
+  /* Shadows (lighter for light mode) */
+  --depth-1: 0 1px 2px rgba(15,23,42,0.05), 0 1px 1px rgba(15,23,42,0.03);
+  --depth-2: 0 4px 24px rgba(15,23,42,0.06);
+  --depth-3: 0 6px 28px rgba(15,23,42,0.08);
+  --depth-4: 0 16px 40px rgba(15,23,42,0.12);
+
+  --shadow-card: var(--depth-2);
+  --shadow-card-hover: var(--depth-3);
+  --shadow-elevated: var(--depth-4);
+
+  /* Typography Scale — same as dark */
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-display: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --text-h1: clamp(1.75rem, 1.375rem + 1.5vw, 2.5rem);
+  --text-h2: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --text-h3: clamp(1.25rem, 1.125rem + 0.5vw, 1.5rem);
+  --text-lg: 1.125rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+  --text-micro: 0.625rem;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.2em;
+
+  /* Control heights — Unified system */
+  --control-h-xs: 32px;
+  --control-h-sm: 36px;
+  --control-h-md: 40px;
+  --control-h-lg: 44px;
+  --control-h-xl: 48px;
+
+  /* Spacing scale */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Chevron for selects — literal colours, for the same reason as dark.
+     Restated per theme so the arrow tracks the light-theme text ramp. */
+  --chevron-svg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  --chevron-svg-focus: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%230891B2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* ============================================================
+   REDUCED MOTION — Global override (preserved from animations.css)
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -16,6 +16,7 @@ def create_user_habit(
     title: str,
     description: str | None,
     frequency: str,
+    goal_id: int | None = None,
 ) -> Habit:
     """Create a habit for the current user."""
 
@@ -25,6 +26,7 @@ def create_user_habit(
         title=title,
         description=description,
         frequency=frequency,
+        goal_id=goal_id,
     )
 
 

@@ -38,6 +38,8 @@ def create_task(
         status=data.status,
         priority=data.priority,
         due_date=data.due_date,
+        goal_id=data.goal_id,
+        estimated_minutes=data.estimated_minutes,
     )
 
     return TaskResponse.model_validate(task)

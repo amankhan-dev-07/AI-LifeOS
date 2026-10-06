@@ -44,18 +44,56 @@ class User(Base):
         nullable=False,
     )
 
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
     tasks = relationship(
         "Task",
         back_populates="user",
         cascade="all, delete-orphan",
     )
     goals = relationship(
-    "Goal",
-    back_populates="user",
-    cascade="all, delete-orphan",
+        "Goal",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
     habits = relationship(
-    "Habit",
-    back_populates="user",
-    cascade="all, delete-orphan",
+        "Habit",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    planner_events = relationship(
+        "PlannerEvent",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    notes = relationship(
+        "Note",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    transactions = relationship(
+        "Transaction",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    notifications = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    reminders = relationship(
+        "Reminder",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    preferences = relationship(
+        "UserPreferences",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
     )

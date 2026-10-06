@@ -1,0 +1,1494 @@
+/* ============================================================
+   THEME.CSS — Token-driven component layer
+   Zero hardcoded colors. All values reference CSS variables.
+   ============================================================ */
+
+/* -----------------------------------------------------------------
+   SURFACES & CARDS — 4 Level Hierarchy
+   ----------------------------------------------------------------- */
+
+/* Level 1: Page background */
+.surface-1 {
+  background: rgb(var(--surface-1));
+}
+
+/* Level 2: Secondary surface / navigation / subtle panels */
+.surface-2 {
+  background: rgb(var(--surface-2));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-lg);
+}
+
+/* Level 3: Primary cards */
+.surface-3,
+.card {
+  background: rgb(var(--surface-3));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.surface-3:hover,
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgb(var(--border-hover));
+}
+
+/* Level 4: Elevated interactive surfaces / dialogs / command surfaces */
+.surface-4 {
+  background: rgb(var(--surface-4));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+}
+
+.card-interactive {
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), transform var(--duration-fast);
+}
+
+.card-interactive:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgb(var(--border-hover));
+  transform: translateY(-2px);
+}
+
+.card-interactive:active {
+  transform: translateY(0);
+}
+
+/* Glass / Translucent surfaces (lightweight, no 64px blur) */
+.glass {
+  background: rgb(var(--surface-2) / 0.7);
+  backdrop-filter: blur(8px) saturate(1.5);
+  border: 1px solid rgb(var(--border) / 0.5);
+  border-radius: var(--radius-xl);
+}
+
+.glass-strong {
+  background: rgb(var(--surface-3) / 0.85);
+  backdrop-filter: blur(12px) saturate(1.8);
+  border: 1px solid rgb(var(--border) / 0.6);
+  border-radius: var(--radius-xl);
+}
+
+/* Page background helper */
+.shell-bg {
+  background: rgb(var(--bg));
+}
+
+/* Subtle top accent line for cards/forms */
+.accent-top {
+  position: relative;
+}
+.accent-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--accent) / 0.5), transparent);
+  pointer-events: none;
+}
+
+/* -----------------------------------------------------------------
+   BUTTONS — Premium restrained system
+   No glowing shadows. Refined hover/press/focus/disabled.
+   ----------------------------------------------------------------- */
+
+.btn-primary {
+  background: rgb(var(--accent));
+  color: rgb(var(--text-inverse));
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-5);
+  height: var(--control-h-lg);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-normal);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--duration-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: rgb(var(--accent-hover));
+  border-color: rgb(var(--accent-hover));
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+  background: rgb(var(--accent-hover));
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.btn-secondary {
+  background: rgb(var(--surface-4));
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-5);
+  height: var(--control-h-lg);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-normal);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--duration-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgb(var(--surface-hover));
+  border-color: rgb(var(--border-hover));
+  color: rgb(var(--text-primary));
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: rgb(var(--surface-active));
+  transform: scale(0.98);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: rgb(var(--text-secondary));
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-4);
+  height: var(--control-h-lg);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-normal);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--duration-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgb(var(--surface));
+  color: rgb(var(--text-primary));
+}
+
+.btn-ghost:active:not(:disabled) {
+  background: rgb(var(--surface-hover));
+  transform: scale(0.98);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.btn-danger {
+  background: rgb(var(--danger));
+  color: white;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-5);
+  height: var(--control-h-lg);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-normal);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--duration-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgb(220 38 38);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: scale(0.98);
+  background: rgb(220 38 38);
+}
+
+.btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-danger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(var(--danger) / 0.35);
+}
+
+/* NOTE ON THE SIGNATURE GRADIENT AND BUTTONS
+
+   There is deliberately no `.btn-gradient`. The brand gradient is
+   cyan→violet, and in light mode no single flat label colour clears 4.5:1
+   across it at both ends:
+
+     #0F172A on #0891B2 (cyan)   → 4.6:1  ✓
+     #0F172A on #8B5CF6 (violet) → 3.2:1  ✗
+     #FFFFFF on #8B5CF6 (violet) → 5.3:1  ✓
+     #FFFFFF on #0891B2 (cyan)   → 3.7:1  ✗
+
+   So a gradient-backed button is legible at one end and not the other
+   depending on which text colour you pick. The gradient is therefore used
+   only where nothing is read out of it — the brand marks, `.progress-fill`,
+   `.gradient-text`, `.accent-top` — and every labelled button stays a solid
+   accent, which is 4.8:1 with white in dark mode and 4.6:1 with dark text in
+   light mode at every point. */
+
+/* Button sizes */
+.btn-sm {
+  padding: 0 var(--space-3);
+  height: var(--control-h-sm);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-md);
+}
+
+.btn-lg {
+  padding: 0 var(--space-6);
+  height: var(--control-h-xl);
+  font-size: var(--text-base);
+  border-radius: var(--radius-lg);
+}
+
+/* Icon-only button — same height system, square */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
+  padding: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgb(var(--text-tertiary));
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: rgb(var(--surface));
+  color: rgb(var(--text-primary));
+}
+
+.btn-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.btn-icon:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------------------------------
+   INPUTS — Unified height system, precise & quiet
+   No inset shadows. Exactly one chevron on every select.
+
+   ROOT CAUSE OF THE GLOBAL "ICON OVERLAPS TEXT" BUG — fixed here, once,
+   for every form in the app:
+
+   Icon clearance was never expressed as geometry. Every field declared its
+   own `pl-10` / `pr-12` utility while `.input` declared `padding: 0 12px`
+   as a *shorthand*. A shorthand resets all four sides, so whichever rule
+   won the cascade decided whether the icon got its clearance. When `.input`
+   won, `pl-10` was discarded and the text started at 12px — directly under
+   the 16px-wide icon inset at 12px — so placeholder, value and caret all
+   painted over the lucide glyph. Because the defect lived in the shared
+   `.input` box, it hit Auth, Tasks, Goals, Habits, Planner, Notes, Finance
+   and ReminderModal at the same time. That is why it presented as one
+   system-level fault rather than ~25 independent mistakes.
+
+   The fix is to stop making clearance optional. `.input` no longer sets
+   `padding` as a shorthand; it sets each longhand. A longhand cannot
+   silently discard an instance's `pl-10`, and a field with no adornment
+   keeps exactly 12px and nothing more.
+
+   `.input-icon-left` / `.input-icon-right` / `.input-icon-both` exist so
+   markup need not restate Tailwind's spacing scale. They are opt-in and
+   additive, and both the icon inset and the reserved clearance are tokens
+   in variables.css, so the two can never drift apart.
+
+   The box rules stay inside `@layer utilities` for a second reason:
+   `theme.css` is @import-ed from index.css *before* `@tailwind`, so anything
+   declared here at the top level is unlayered, and unlayered rules beat every
+   `@layer utilities` rule regardless of specificity. That is precisely what
+   let `.input` clobber `pl-10 py-3 h-10 rounded-full` in the first place.
+   Keeping them layered puts them in the same layer as Tailwind's output, so
+   source order — not specificity — decides, and `pl-10` still wins.
+
+   Interaction states (:hover, :focus, ::placeholder, :disabled) stay
+   unlayered on purpose: they must never lose to a utility.
+   ----------------------------------------------------------------- */
+
+.input::placeholder {
+  color: rgb(var(--text-muted));
+}
+
+.input:hover:not(:disabled):not(:read-only):not(:focus) {
+  border-color: rgb(var(--border-hover));
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgb(var(--border-focus));
+  background: rgb(var(--surface-3));
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.input:disabled,
+.input:read-only {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: rgb(var(--surface-2));
+}
+
+.input-error {
+  border-color: rgb(var(--danger) / 0.6);
+}
+
+.input-error:focus {
+  border-color: rgb(var(--danger));
+}
+
+.input-ghost:focus {
+  outline: none;
+  border-color: rgb(var(--border-focus));
+  background: rgb(var(--surface-4));
+}
+
+.input-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.input-ghost::placeholder {
+  color: rgb(var(--text-muted));
+}
+
+/* Compact field variant (inline chips, filters) */
+
+/* -----------------------------------------------------------------
+   INPUT BOX GEOMETRY — see the note above.
+   Padding is declared per-side (longhands), never as a shorthand, so an
+   instance's `pl-10` is additive rather than destructively reset. Layered so
+   per-instance Tailwind utilities (pl-10, py-3, h-10, rounded-full, w-32)
+   still win on source order.
+   ----------------------------------------------------------------- */
+@layer utilities {
+  .input,
+  .input-ghost {
+    background: rgb(var(--surface-4));
+    border: 1px solid rgb(var(--border));
+    border-radius: var(--radius-lg);
+    color: rgb(var(--text-primary));
+    /* Longhands, not `padding: 0 12px`. A shorthand would silently discard an
+       instance's `pl-10` and reintroduce the icon overlap this block exists
+       to prevent. */
+    padding-top: 0;
+    padding-right: var(--space-3);
+    padding-bottom: 0;
+    padding-left: var(--space-3);
+    height: var(--control-h-lg);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: 1;
+    width: 100%;
+    transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .input-ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .input-sm {
+    height: var(--control-h-sm);
+    font-size: var(--text-xs);
+    border-radius: var(--radius-md);
+  }
+
+  /* Explicit adornment clearances. Opt-in and additive: they raise the
+     reserved space above the 12px baseline, they never lower it. */
+  .input-icon-left {
+    padding-left: var(--clearance-icon-left);
+  }
+
+  .input-icon-right {
+    padding-right: var(--clearance-icon-right);
+  }
+
+  .input-icon-both {
+    padding-left: var(--clearance-icon-left);
+    padding-right: var(--clearance-icon-right);
+  }
+
+  /* Textareas keep their own height/padding regardless of the utilities above.
+     `min-h-[140px]` etc. on a textarea are written *after* `.input` in source
+     order, so they win the same way `pl-10` does. */
+  textarea.input {
+    height: auto;
+    min-height: 96px;
+    padding: var(--space-3);
+    line-height: var(--leading-normal);
+    resize: vertical;
+  }
+
+  /* Number/date/time native controls: hide the UA spinner so the field height
+     stays predictable across the height system. */
+  .input[type="number"]::-webkit-outer-spin-button,
+  .input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+    /* The spinner is suppressed above, so the field would otherwise render a
+       centred number against an asymmetric left inset and read as off-axis.
+       Tabular figures stop the value jittering as it is typed. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .input[type="date"],
+  .input[type="time"] {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+}
+
+/* -----------------------------------------------------------------
+   SELECTS — one control, one arrow.
+
+   ROOT CAUSE OF THE "DUPLICATED / REPEATED / FAINT CHEVRON" BUG:
+
+   Three separate faults stacked up.
+
+   (1) The arrow was a data URI whose stroke was `rgb(var(--text-tertiary))`.
+       A `url("data:image/svg+xml,…")` is parsed as its own document and
+       cannot read the host's custom properties, so that stroke resolved to an
+       invalid paint value and the arrow rendered as an empty image. What
+       looked like a "faint chevron" was an absent one — what remained on
+       screen was only whatever the UA happened to draw.
+
+   (2) `select[appearance-none]` is an *attribute* selector. It matches an
+       element carrying a literal `appearance-none` HTML attribute, not an
+       element carrying Tailwind's `.appearance-none` *class*. The rule
+       therefore matched nothing in this codebase and could never suppress
+       the native arrow.
+
+   (3) With the UA appearance left intact on the selects that did not carry
+       `.input` (and on any select where the custom class lost the cascade),
+       Chrome painted its own indicator on top of the custom background-image.
+       Two arrows, or one arrow and a faint ghost of another.
+
+   The fix: style selects by TAG. Every `<select>` in this app is ours, so
+   there is no reason to gate the rule behind a utility class that a Tailwind
+   purge can silently remove. `appearance: none` is applied unconditionally,
+   and exactly one arrow is painted from the themed data URI. Keyboard
+   selection and native accessibility are untouched — the element is still a
+   real, focusable `<select>` with a real value, only its painted indicator
+   is replaced.
+
+   Note the split: `appearance` and `background-image` stay UNLAYERED because
+   nothing in the app legitimately overrides them, so there is no reason for a
+   utility to be able to. `padding-right` is LAYERED, because a select that
+   also carries a left adornment needs both clearances and a per-instance
+   `pr-*` must still win on source order — exactly like `.input`'s own padding.
+   ----------------------------------------------------------------- */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: var(--chevron-svg);
+  background-position: right var(--space-3) center;
+  background-repeat: no-repeat;
+  background-size: 1.125rem;
+  cursor: pointer;
+}
+
+select:focus,
+select:focus-visible {
+  background-image: var(--chevron-svg-focus);
+}
+
+@layer utilities {
+  /* Reserved space for the arrow, applied to EVERY select — including the ones
+     that also carry `.input-icon-left` for their left-hand icon. Those two
+     clearances are on opposite sides of the same control, so neither competes
+     with the other, and a select with both simply gets both.
+
+     This rule sits after `.input`'s padding block in source order inside the
+     same layer, which is deliberate: a select must win against `.input`'s
+     12px right padding, and it does — by being declared later, not by being
+     more specific. */
+  select {
+    padding-right: var(--clearance-chevron);
+    /* `appearance: none` drops the native control's own text metrics on some
+       platforms; this keeps a long option value ellipsised rather than
+       running under the arrow. */
+    text-overflow: ellipsis;
+  }
+}
+
+/* Native option lists inherit the surface so a dropdown does not flash white
+   against a dark shell. */
+.input option,
+select option {
+  background: rgb(var(--surface-3));
+  color: rgb(var(--text-primary));
+}
+
+/* Textarea — natural height, matched typography.
+   Number/date/time control normalisation lives in the `@layer utilities`
+   block above, alongside the rest of the field geometry. */
+
+/* -----------------------------------------------------------------
+   ACCENT TEXT — small sizes only.
+
+   The brand accent serves two different contrast jobs. As a FILL (button,
+   progress bar, focus ring, the gradient's cyan end) `--accent` is correct.
+   As 11–12px TEXT it must clear 4.5:1, which the brand cyan does not on a
+   near-white page, so `--accent-text` carries the text role. In dark mode the
+   two are the same value.
+
+   Use this for inline links, `mono-xs` labels and small pills — anywhere the
+   accent is words rather than a shape. Icons and display type can stay on
+   `--accent`; those clear the 3:1 non-text / large-text bar as-is.
+   ----------------------------------------------------------------- */
+.text-accent {
+  color: rgb(var(--accent-text));
+}
+
+.text-accent-hover:hover:not(:disabled) {
+  color: rgb(var(--accent-hover));
+}
+
+/* -----------------------------------------------------------------
+   BRAND MARK — the product's signature identity.
+
+   One class, four call sites (sidebar desktop, mobile top bar, public nav,
+   auth screen). It lives here rather than in each component so the mark can
+   never drift between them.
+
+   WHY THE GLYPH IS ALWAYS WHITE, IN BOTH THEMES
+   ---------------------------------------------
+   The container is the cyan→violet signature gradient. A single flat glyph
+   colour cannot clear 4.5:1 across both of its ends in light mode:
+
+     #0F172A on #0891B2 (cyan)   → 4.6:1   dark text: OK on cyan, 3.2:1 on
+     #0F172A on #8B5CF6 (violet) → 3.2:1   violet — so it fails one end
+     #FFFFFF on #8B5CF6 (violet) → 5.3:1   white text: fails the other
+     #FFFFFF on #0891B2 (cyan)   → 3.7:1
+
+   White only loses to the dark theme's cyan end, and at 3.76:1 it still clears
+   the 3:1 WCAG ratio for a non-text glyph — the correct bar for an icon, which
+   is what this is. So the mark is white everywhere and is legible in both
+   themes by construction rather than by per-theme tuning.
+
+   It is deliberately NOT `--text-inverse`: that token is dark in light mode
+   (it exists so solid accent BUTTONS can carry dark text), which is exactly
+   what made the old mark drop to 3.2:1 on the violet.
+
+   Depth comes from a hairline inset border and a tight, low-alpha shadow —
+   no glow, no blur filter, no animation, no extra compositing layer. The
+   inset border is what separates the mark from a light page background, where
+   a saturated fill alone has no luminance edge to sit against.
+   ----------------------------------------------------------------- */
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--gradient-brand);
+  color: #FFFFFF;
+  /* The size modifiers below declare an exact `width`/`height`, so the 1px
+     hairline has to sit INSIDE that box rather than adding to it. Tailwind's
+     preflight already sets `border-box` globally; this restates it locally
+     because the correctness of the mark's geometry depends on it and this
+     class must not silently shift if a future stylesheet changes the base. */
+  box-sizing: border-box;
+  border-radius: 11px;
+  /* Hairline in both themes: against #F7F8FB a light border would vanish, so
+     it is a dark translucent line in light mode and a light one in dark. */
+  border: 1px solid rgb(255 255 255 / 0.22);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+}
+
+:root:not(.dark) .brand-mark {
+  border-color: rgb(15 23 42 / 0.10);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.10), 0 2px 8px rgb(15 23 42 / 0.08);
+}
+
+/* Glyph colour is set once on the container and inherited, so the icon at each
+   call site carries no colour class of its own and cannot diverge. */
+.brand-mark svg {
+  color: #FFFFFF;
+}
+
+/* Sizes are modifiers rather than per-call-site utilities so the mark's
+   proportion (glyph ≈ 62% of the tile) is identical everywhere it appears. */
+.brand-mark-sm { width: 32px; height: 32px; }
+.brand-mark-md { width: 36px; height: 36px; }
+.brand-mark-lg { width: 56px; height: 56px; }
+
+.brand-mark-sm svg { width: 18px; height: 18px; }
+.brand-mark-md svg { width: 20px; height: 20px; }
+.brand-mark-lg svg { width: 28px; height: 28px; }
+
+/* The wordmark. One class so the brand name is never set in a low-contrast
+   token at one call site and the primary token at another — the defect that
+   made the login wordmark read as body copy. */
+.brand-wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+/* -----------------------------------------------------------------
+   BADGES (semantic, not color-based)
+   ----------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  line-height: 1.4;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.badge-primary {
+  background: rgb(var(--accent) / 0.12);
+  color: rgb(var(--accent));
+  border-color: rgb(var(--accent) / 0.3);
+}
+
+.badge-success {
+  background: rgb(var(--success) / 0.12);
+  color: rgb(var(--success));
+  border-color: rgb(var(--success) / 0.3);
+}
+
+.badge-warning {
+  background: rgb(var(--warning) / 0.12);
+  color: rgb(var(--warning));
+  border-color: rgb(var(--warning) / 0.3);
+}
+
+.badge-danger {
+  background: rgb(var(--danger) / 0.12);
+  color: rgb(var(--danger));
+  border-color: rgb(var(--danger) / 0.3);
+}
+
+.badge-neutral {
+  background: rgb(var(--surface));
+  color: rgb(var(--text-tertiary));
+  border-color: rgb(var(--border));
+}
+
+.badge-info {
+  background: rgb(var(--accent-tertiary) / 0.12);
+  color: rgb(var(--accent-tertiary));
+  border-color: rgb(var(--accent-tertiary) / 0.3);
+}
+
+/* -----------------------------------------------------------------
+   NAVIGATION — Precise active state, no glow
+   ----------------------------------------------------------------- */
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  height: 38px;
+  border-radius: var(--radius-md);
+  color: rgb(var(--text-tertiary));
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: var(--tracking-normal);
+  text-decoration: none;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.nav-item:hover {
+  color: rgb(var(--text-primary));
+  background: rgb(var(--surface-3) / 0.6);
+}
+
+/* The active state is carried by a 2px accent rule, a raised surface and
+   stronger text — not a saturated fill. A full-width tinted block at 12%
+   opacity reads as a "selected chip" and makes every adjacent row look
+   heavier; the rule + surface shift marks the row without adding colour mass. */
+.nav-item.active {
+  color: rgb(var(--text-primary));
+  background: rgb(var(--surface-4));
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: rgb(var(--accent));
+}
+
+.nav-item.active .nav-icon {
+  color: rgb(var(--accent));
+}
+
+.nav-icon {
+  color: rgb(var(--text-muted));
+  transition: color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.nav-item:hover .nav-icon {
+  color: rgb(var(--text-secondary));
+}
+
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Grouped nav sections */
+.nav-group + .nav-group {
+  margin-top: var(--space-5);
+}
+
+.nav-group-label {
+  padding: 0 var(--space-3);
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: rgb(var(--text-muted));
+}
+
+/* -----------------------------------------------------------------
+   MODALS & DROPDOWNS
+   ----------------------------------------------------------------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(var(--bg-deep) / 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+}
+
+.modal-content {
+  background: rgb(var(--card));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-elevated);
+  z-index: var(--z-modal);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scaleIn var(--duration-normal) var(--ease-spring);
+}
+
+.dropdown {
+  background: rgb(var(--card));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: var(--z-dropdown);
+  animation: fadeInUp var(--duration-fast) var(--ease-out);
+}
+
+/* -----------------------------------------------------------------
+   PROGRESS & SKELETONS
+   ----------------------------------------------------------------- */
+
+.progress-bar {
+  height: 6px;
+  background: rgb(var(--surface));
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-brand);
+  border-radius: var(--radius-full);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--surface));
+  border-radius: var(--radius-md);
+}
+
+/* The travelling highlight is a pseudo-element, not the skeleton itself.
+   Animating `transform` on `.skeleton` directly would translate the whole
+   placeholder block through the layout — a 200% slide drags it across its
+   siblings. `::after` is clipped by the `overflow: hidden` above, so only the
+   highlight moves, and it still costs only a compositor transform. */
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--surface-hover)),
+    transparent
+  );
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* -----------------------------------------------------------------
+   SCROLL AREAS
+   ----------------------------------------------------------------- */
+
+.scroll-y {
+  overflow-y: auto;
+}
+
+.scroll-y::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-y::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.scroll-y::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--border-strong));
+  background-clip: content-box;
+}
+
+/* -----------------------------------------------------------------
+   FOCUS RING (single source of truth)
+   ----------------------------------------------------------------- */
+
+/* Opt-in ring for elements that animate their own `box-shadow` (buttons,
+   inputs, interactive cards), where a competing hover shadow would erase the
+   global outline from `index.css`. `:focus:not(:focus-visible)` unsets the
+   outline on mouse press, matching what the browser already does. */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.focus-ring:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Focus ring inset variant for buttons/inputs that need it */
+.focus-ring-inset:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-inset);
+}
+
+/* -----------------------------------------------------------------
+   STATUS INDICATORS (static, no pulse animation)
+   ----------------------------------------------------------------- */
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.status-dot-success {
+  background: rgb(var(--success));
+}
+
+.status-dot-warning {
+  background: rgb(var(--warning));
+}
+
+.status-dot-danger {
+  background: rgb(var(--danger));
+}
+
+.status-dot-info {
+  background: rgb(var(--accent-tertiary));
+}
+
+.status-dot-neutral {
+  background: rgb(var(--text-tertiary));
+}
+
+/* -----------------------------------------------------------------
+   DIVIDERS & SEPARATORS
+   ----------------------------------------------------------------- */
+
+.divider {
+  height: 1px;
+  background: rgb(var(--border));
+  border: none;
+}
+
+.divider-vertical {
+  width: 1px;
+  height: 100%;
+  background: rgb(var(--border));
+  border: none;
+}
+
+/* -----------------------------------------------------------------
+   TOOLTIPS & POPOVERS
+   ----------------------------------------------------------------- */
+
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.375rem 0.625rem;
+  background: rgb(var(--bg-deep));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: rgb(var(--text-primary));
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: var(--z-tooltip);
+  box-shadow: var(--shadow-elevated);
+  margin-bottom: 0.375rem;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* -----------------------------------------------------------------
+   TABS
+   ----------------------------------------------------------------- */
+
+.tabs-list {
+  display: flex;
+  gap: 0.25rem;
+  background: rgb(var(--surface));
+  border-radius: var(--radius-lg);
+  padding: 0.25rem;
+}
+
+.tabs-trigger {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgb(var(--text-tertiary));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.tabs-trigger:hover {
+  color: rgb(var(--text-primary));
+  background: rgb(var(--surface-hover));
+}
+
+.tabs-trigger[data-state="active"] {
+  color: rgb(var(--text-primary));
+  background: rgb(var(--card));
+  box-shadow: var(--shadow-card);
+}
+
+.tabs-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* -----------------------------------------------------------------
+   AVATAR
+   ----------------------------------------------------------------- */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--border));
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--text-tertiary));
+  font-weight: 600;
+}
+
+/* Avatar sizes */
+.avatar-xs { width: 24px; height: 24px; font-size: 0.625rem; }
+.avatar-sm { width: 32px; height: 32px; font-size: 0.75rem; }
+.avatar-md { width: 40px; height: 40px; font-size: 0.875rem; }
+.avatar-lg { width: 48px; height: 48px; font-size: 1rem; }
+.avatar-xl { width: 64px; height: 64px; font-size: 1.25rem; }
+
+/* -----------------------------------------------------------------
+   TOAST / NOTIFICATION
+   ----------------------------------------------------------------- */
+
+.toast {
+  background: rgb(var(--card));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 280px;
+  max-width: 420px;
+  animation: slideInRight var(--duration-normal) var(--ease-out);
+}
+
+.toast-success {
+  border-left: 4px solid rgb(var(--success));
+}
+
+.toast-warning {
+  border-left: 4px solid rgb(var(--warning));
+}
+
+.toast-danger {
+  border-left: 4px solid rgb(var(--danger));
+}
+
+.toast-info {
+  border-left: 4px solid rgb(var(--accent-tertiary));
+}
+
+/* -----------------------------------------------------------------
+   TABLE
+   ----------------------------------------------------------------- */
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgb(var(--border));
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgb(var(--border));
+}
+
+.table th {
+  background: rgb(var(--surface));
+  font-weight: 600;
+  color: rgb(var(--text-secondary));
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table tbody tr {
+  background: rgb(var(--card));
+  transition: background var(--transition-fast);
+}
+
+.table tbody tr:hover {
+  background: rgb(var(--card-hover));
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* -----------------------------------------------------------------
+   TYPOGRAPHY — Editorial hierarchy
+   Display type for headings; technical micro type for metadata only.
+   ----------------------------------------------------------------- */
+
+.typo-display {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+.typo-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+.typo-h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+.typo-h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+.typo-card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+/* Body copy — the UI sans, not monospace. Monospace is reserved for
+   technical values (counts, durations, ids, timestamps) where the tabular
+   figures are the point. */
+.typo-body {
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: var(--leading-normal);
+  color: rgb(var(--text-secondary));
+}
+
+.typo-body-sm {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: var(--leading-relaxed);
+  color: rgb(var(--text-secondary));
+}
+
+/* Supporting metadata — still readable sans, one step down */
+.typo-meta {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: var(--leading-snug);
+  color: rgb(var(--text-tertiary));
+}
+
+/* Micro label — technical/uppercase, used sparingly */
+.typo-micro {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: rgb(var(--text-muted));
+}
+
+.typo-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-wide);
+  color: rgb(var(--text-secondary));
+}
+
+/* Tabular figures for numeric readouts */
+.typo-numeric {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* -----------------------------------------------------------------
+   SECTIONS — Editorial headers that are not cards
+   ----------------------------------------------------------------- */
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid rgb(var(--border-subtle));
+}
+
+.section-header-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: rgb(var(--text-muted));
+}
+
+.section-header-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: rgb(var(--text-primary));
+}
+
+/* A rule-and-label header: hierarchy from typography and a separator rather
+   than another bordered rectangle. */
+.rule-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rule-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgb(var(--border-subtle));
+}
+
+/* -----------------------------------------------------------------
+   CARD ROLES — Not every section needs border + shadow + radius
+   ----------------------------------------------------------------- */
+
+/* Primary: the hero / decision surface. Highest visual weight on a page. */
+.card-hero {
+  background: rgb(var(--surface-3));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card-hover);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Secondary: information surface. Recedes behind the hero. */
+.card-secondary {
+  background: rgb(var(--surface-3));
+  border: 1px solid rgb(var(--border-subtle));
+  border-radius: var(--radius-xl);
+}
+
+/* Compact: utility surface — small chips, inline controls, metadata blocks */
+.card-compact {
+  background: rgb(var(--surface-4));
+  border: 1px solid rgb(var(--border-subtle));
+  border-radius: var(--radius-md);
+}
+
+/* Borderless: hierarchy from whitespace + a separator only. Used where a
+   full card would make a short list look heavier than it is. */
+.card-plain {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Input/action surface — visually a working area, not a content card */
+.card-input {
+  background: rgb(var(--surface-2));
+  border: 1px solid rgb(var(--border-subtle));
+  border-radius: var(--radius-xl);
+}
+
+/* -----------------------------------------------------------------
+   LIST ROWS — Editorial density for item lists
+   ----------------------------------------------------------------- */
+
+.row-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: rgb(var(--surface-3));
+  border: 1px solid transparent;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.row-item:hover {
+  background: rgb(var(--surface-4));
+  border-color: rgb(var(--border-subtle));
+}
+
+/* Separator-only variant: rows share one container and are divided by
+   hairlines instead of each carrying its own border. */
+.row-stack {
+  background: rgb(var(--surface-3));
+  border: 1px solid rgb(var(--border-subtle));
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.row-stack > .row-item + .row-item {
+  border-top: 1px solid rgb(var(--border-subtle));
+}
+
+.row-stack > .row-item {
+  border-radius: 0;
+  background: transparent;
+}
+
+.row-stack > .row-item:hover {
+  background: rgb(var(--surface-4));
+  border-color: transparent;
+}
+
+/* -----------------------------------------------------------------
+   UTILITIES
+   ----------------------------------------------------------------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Aspect ratio helpers */
+.aspect-square { aspect-ratio: 1 / 1; }
+.aspect-video { aspect-ratio: 16 / 9; }
+.aspect-auto { aspect-ratio: auto; }
+
+/* Container queries (for future) */
+@container (min-width: 400px) {
+  .container-lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

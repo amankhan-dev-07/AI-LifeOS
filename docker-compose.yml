@@ -1,0 +1,133 @@
+# AI-LifeOS local/production-shaped stack.
+#
+# This file exists to run the whole system locally and to make the intended
+# production topology explicit. It is not provider-specific.
+#
+# ---------------------------------------------------------------------------
+# CONFIGURATION SOURCE
+# ---------------------------------------------------------------------------
+# Compose reads `${VARIABLE}` from the environment and from a `.env` file in
+# THIS directory (the repository root) — that is Compose's own rule, not a
+# choice this file can change.
+#
+#   cp .env.example .env
+#
+# So the ROOT `.env` is the source for every container below.
+#
+# `backend/.env` is a DIFFERENT file with a different job: it configures the
+# backend when you run it directly on your machine with `uvicorn`, outside
+# Docker. The two are never read by the same process. Note the difference in
+# their DATABASE_URL hosts — `db` inside the Compose network, `localhost` when
+# you run the backend yourself.
+#
+#   docker compose up --build
+#
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:8000
+# Health:    http://localhost:8000/api/v1/health
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      # No default on purpose. `${VAR:?message}` makes Compose FAIL with that
+      # message when the variable is unset, instead of silently starting a
+      # database with a well-known password. Local development stays easy
+      # because root .env.example sets a throwaway value.
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in the root .env - copy .env.example and change it}'
+      POSTGRES_DB: ${POSTGRES_DB:-ai_lifeos}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # -------------------------------------------------------------------------
+      # LOCAL DEVELOPMENT ONLY.
+      # This publishes PostgreSQL on the host's 5432. On anything reachable
+      # from the internet, delete this whole `ports:` block so the database is
+      # only reachable from inside the Compose network.
+      # -------------------------------------------------------------------------
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ai_lifeos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # An explicit DATABASE_URL in the root .env always wins. This is the escape
+      # hatch for a password containing "@", ":" or "/", which cannot be
+      # spliced raw into a DSN: supply the URL-encoded form yourself.
+      #
+      # Otherwise the DSN is assembled from the same POSTGRES_* values the `db`
+      # service uses, so the password is defined once and cannot drift.
+      #
+      # The host is `db` — the Compose service name — NOT `localhost`. Inside a
+      # container, `localhost` is that container itself, so a URL using it here
+      # would fail to reach the database at all.
+      #
+      # Single-quoted so YAML treats it as one literal scalar; Compose still
+      # interpolates inside single quotes. The default branch below nests
+      # variables (${A:-${B}...}), which is documented Compose syntax but is
+      # worth confirming on your Compose version with `docker compose config`
+      # before relying on it in production.
+      DATABASE_URL: '${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in the root .env}@db:5432/${POSTGRES_DB:-ai_lifeos}}'
+      # SECRET_KEY has no default either. The app refuses to start on the
+      # placeholder when DEBUG is false, so an unset value fails loudly here
+      # first with a clearer message.
+      #
+      # The value is single-quoted because the error message contains ": ",
+      # which YAML would otherwise read as a key/value separator.
+      SECRET_KEY: '${SECRET_KEY:?SECRET_KEY must be set in the root .env - generate one with python -c "import secrets; print(secrets.token_urlsafe(64))"}'
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      # Reminder delivery ticks once a minute; give the app time to start and
+      # run its first tick before declaring the container healthy.
+      retries: 5
+      start_period: 20s
+
+  # One-shot migration runner. Brings the schema to head, then exits.
+  # Run explicitly:  docker compose run --rm migrate
+  # Do NOT add this to the backend's depends_on for a production deploy —
+  # concurrent replicas would race on the same migration.
+  migrate:
+    build:
+      context: ./backend
+    profiles: ["migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Same resolution as the backend service: an explicit DATABASE_URL wins,
+      # otherwise this is assembled from POSTGRES_* against the `db` host.
+      # Migrations must reach exactly the database the app uses.
+      DATABASE_URL: '${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in the root .env}@db:5432/${POSTGRES_DB:-ai_lifeos}}'
+      SECRET_KEY: '${SECRET_KEY:?SECRET_KEY must be set in the root .env}'
+      DEBUG: ${DEBUG:-false}
+    command: ["alembic", "upgrade", "head"]
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:

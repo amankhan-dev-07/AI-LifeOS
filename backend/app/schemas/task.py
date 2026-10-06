@@ -23,6 +23,13 @@ class TaskCreate(BaseModel):
 
     due_date: datetime | None = None
 
+    goal_id: int | None = None
+
+    estimated_minutes: int = Field(
+        default=45,
+        ge=1,
+    )
+
 
 class TaskUpdate(BaseModel):
     title: str | None = Field(
@@ -45,6 +52,13 @@ class TaskUpdate(BaseModel):
 
     due_date: datetime | None = None
 
+    goal_id: int | None = None
+
+    estimated_minutes: int | None = Field(
+        default=None,
+        ge=1,
+    )
+
 
 class TaskResponse(BaseModel):
     id: int
@@ -54,6 +68,8 @@ class TaskResponse(BaseModel):
     status: str
     priority: str
     due_date: datetime | None
+    goal_id: int | None
+    estimated_minutes: int
     created_at: datetime
     updated_at: datetime
 

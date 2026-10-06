@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,6 +18,12 @@ class Habit(Base):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+
+    goal_id: Mapped[int | None] = mapped_column(
+        ForeignKey("goals.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
 
@@ -62,23 +68,45 @@ class Habit(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        nullable=False,
         default=datetime.utcnow,
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        nullable=False,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+        nullable=False,
     )
 
     user = relationship(
         "User",
         back_populates="habits",
     )
+    goal = relationship(
+        "Goal",
+        back_populates="habits",
+    )
     completions = relationship(
-    "HabitCompletion",
-    back_populates="habit",
-    cascade="all, delete-orphan",
+        "HabitCompletion",
+        back_populates="habit",
+        cascade="all, delete-orphan",
+    )
+    planner_events = relationship(
+        "PlannerEvent",
+        back_populates="habit",
+        cascade="all, delete-orphan",
+    )
+    # Cross-domain link from a reminder (SET NULL on delete).
+    reminders = relationship(
+        "Reminder",
+        back_populates="habit",
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_habits_user_active",
+            "user_id",
+            "is_active",
+        ),
     )

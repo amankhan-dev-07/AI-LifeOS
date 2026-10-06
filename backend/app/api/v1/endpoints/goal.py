@@ -37,6 +37,7 @@ def create_goal(
         description=data.description,
         category=data.category,
         target_date=data.target_date,
+        progress=data.progress,
     )
 
     return GoalResponse.model_validate(goal)

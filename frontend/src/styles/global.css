@@ -1,0 +1,4 @@
+/* Intentionally empty. This file is not imported anywhere (index.css pulls in
+   variables.css, theme.css and animations.css directly) and has been empty for
+   some time. Kept as a placeholder only so an existing import path does not
+   hard-fail; delete it once nothing references it. */

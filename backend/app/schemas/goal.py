@@ -19,6 +19,8 @@ class GoalCreate(BaseModel):
 
     target_date: datetime | None = None
 
+    progress: int = Field(default=0, ge=0, le=100)
+
 
 class GoalUpdate(BaseModel):
     title: str | None = Field(
@@ -37,6 +39,8 @@ class GoalUpdate(BaseModel):
 
     target_date: datetime | None = None
 
+    progress: int | None = Field(default=None, ge=0, le=100)
+
     is_completed: bool | None = None
 
 
@@ -47,6 +51,7 @@ class GoalResponse(BaseModel):
     description: str | None
     category: str
     target_date: datetime | None
+    progress: int
     is_completed: bool
     created_at: datetime
     updated_at: datetime

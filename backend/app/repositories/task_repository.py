@@ -12,6 +12,8 @@ def create_task(
     status: str,
     priority: str,
     due_date,
+    goal_id: int | None = None,
+    estimated_minutes: int = 45,
 ) -> Task:
     """Create a new task for a user."""
 
@@ -22,6 +24,8 @@ def create_task(
         status=status,
         priority=priority,
         due_date=due_date,
+        goal_id=goal_id,
+        estimated_minutes=estimated_minutes,
     )
 
     db.add(task)
@@ -69,8 +73,7 @@ def update_task(
     """Update an existing task."""
 
     for field, value in updates.items():
-        if value is not None:
-            setattr(task, field, value)
+        setattr(task, field, value)
 
     db.commit()
     db.refresh(task)
